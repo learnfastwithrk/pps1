@@ -4,44 +4,46 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>PPS-1 Survival Guide 🎮 — Gen-Z Edition</title>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
 <style>
+
   :root{
-    --bg: #0f0e17;
-    --bg2: #1a1825;
-    --card: #201d30;
-    --text: #fffffe;
-    --muted: #a7a9be;
-    --accent: #ff8906;
-    --accent2: #f25f4c;
-    --accent3: #e53170;
-    --purple: #7f5af0;
-    --teal: #2cb67d;
-    --border: #33304a;
+    --bg: #0f0e17; --bg2: #1a1825; --card: #201d30; --text: #fffffe; --muted: #a7a9be;
+    --accent: #ff8906; --accent2: #f25f4c; --accent3: #e53170; --purple: #7f5af0; --teal: #2cb67d; --border: #33304a;
   }
-  [data-theme="light"]{
-    --bg: #fbfaff;
-    --bg2: #f2f0ff;
-    --card: #ffffff;
-    --text: #16161a;
-    --muted: #5a5a6e;
-    --border: #e2e0f5;
-  }
+  [data-theme="light"]{ --bg: #fbfaff; --bg2: #f2f0ff; --card: #ffffff; --text: #16161a; --muted: #5a5a6e; --border: #e2e0f5; }
   *{box-sizing:border-box;}
-  body{
-    margin:0; font-family:'Poppins','Segoe UI',system-ui,sans-serif;
-    background: var(--bg); color: var(--text);
-    transition: background .3s, color .3s;
-  }
+  body{ margin:0; font-family:'Poppins','Segoe UI',system-ui,sans-serif; background: var(--bg); color: var(--text); transition: background .3s, color .3s; }
   a{color:var(--purple);}
+  button.pill{
+    font-family:inherit; cursor:pointer; border:none; border-radius:999px; padding:10px 20px;
+    font-weight:600; font-size:14px; background: var(--purple); color:white;
+    box-shadow: 0 6px 18px rgba(127,90,240,0.35); transition: transform .15s;
+  }
+  button.pill:hover{ transform: translateY(-2px); }
+  button.pill.secondary{ background: var(--card); color:var(--text); border:1px solid var(--border); box-shadow:none;}
+  button.pill:disabled{ opacity:.5; cursor:not-allowed; transform:none; }
+  .auth-bar{
+    max-width:880px; margin:0 auto; padding:12px 20px; display:flex; align-items:center; justify-content:center;
+    gap:12px; flex-wrap:wrap; font-size:14px;
+  }
+  .auth-bar img{ width:28px; height:28px; border-radius:50%; }
+  .status-badge{ padding:4px 10px; border-radius:999px; font-size:12px; font-weight:600; }
+  .status-badge.pending{ background: rgba(255,137,6,0.2); color:var(--accent); }
+  .status-badge.approved{ background: rgba(44,182,125,0.2); color:var(--teal); }
+  .status-badge.rejected{ background: rgba(242,95,76,0.2); color:var(--accent2); }
+
   .hero{
-    padding: 56px 24px 40px; text-align:center;
+    padding: 24px 24px 40px; text-align:center;
     background: radial-gradient(circle at 20% 20%, rgba(127,90,240,0.35), transparent 55%),
                 radial-gradient(circle at 80% 0%, rgba(255,137,6,0.28), transparent 50%),
                 var(--bg2);
     border-bottom: 1px solid var(--border);
   }
   .hero h1{
-    font-size: clamp(28px, 5vw, 48px); margin: 0 0 8px;
+    font-size: clamp(28px, 5vw, 48px); margin: 16px 0 8px;
     background: linear-gradient(90deg, var(--purple), var(--accent3), var(--accent));
     -webkit-background-clip: text; background-clip:text; color:transparent;
     font-weight:800;
@@ -50,13 +52,6 @@
   .hero .badges{display:flex; gap:10px; justify-content:center; flex-wrap:wrap; margin-bottom:22px;}
   .hero .badge{ background: var(--card); border:1px solid var(--border); padding:6px 14px; border-radius:999px; font-size:13px; color:var(--muted);}
   .top-controls{ display:flex; gap:12px; justify-content:center; align-items:center; flex-wrap:wrap;}
-  button.pill{
-    font-family:inherit; cursor:pointer; border:none; border-radius:999px; padding:10px 20px;
-    font-weight:600; font-size:14px; background: var(--purple); color:white;
-    box-shadow: 0 6px 18px rgba(127,90,240,0.35); transition: transform .15s;
-  }
-  button.pill:hover{ transform: translateY(-2px); }
-  button.pill.secondary{ background: var(--card); color:var(--text); border:1px solid var(--border); box-shadow:none;}
   .progress-wrap{ max-width:480px; margin: 22px auto 0; }
   .progress-bar-outer{ background:var(--border); border-radius:999px; height:14px; overflow:hidden;}
   .progress-bar-inner{ height:100%; width:0%; background: linear-gradient(90deg, var(--teal), var(--purple)); transition: width .4s ease;}
@@ -129,9 +124,7 @@
 
   .challenge{ background: var(--card); border:1px dashed var(--purple); border-radius:12px; padding:14px 16px; margin-bottom:14px;}
   .challenge-task{ font-size:14.5px; margin: 0 0 10px; line-height:1.5;}
-  details.reveal summary{
-    cursor:pointer; font-weight:600; color: var(--purple); font-size:13.5px; list-style:none;
-  }
+  details.reveal summary{ cursor:pointer; font-weight:600; color: var(--purple); font-size:13.5px; list-style:none; }
   details.reveal summary::-webkit-details-marker{ display:none;}
   details.reveal summary::before{ content:"▶ "; font-size:11px;}
   details.reveal[open] summary::before{ content:"▼ ";}
@@ -160,6 +153,16 @@
   button.quiz-opt.incorrect{ background: rgba(242,95,76,0.25); border-color:var(--accent2);}
   button.quiz-opt:disabled{ cursor:default; }
 
+  .submit-block{ background: var(--card); border:1px solid var(--border); border-radius:12px; padding:14px 16px; margin-bottom:14px; }
+  .submit-hint{ font-size:13px; color:var(--muted); margin:0 0 10px; line-height:1.5;}
+  textarea.submit-text{
+    width:100%; min-height:120px; font-family:'Fira Code','Consolas',monospace; font-size:13px;
+    background:var(--bg2); color:var(--text); border:1px solid var(--border); border-radius:10px; padding:12px;
+    resize:vertical;
+  }
+  .submit-row{ display:flex; align-items:center; gap:12px; margin-top:10px; }
+  .submit-status{ font-size:12.5px; color: var(--teal); }
+
   footer{ text-align:center; padding: 30px 20px 50px; color:var(--muted); font-size:13px;}
 
   @media (max-width: 600px){
@@ -169,6 +172,16 @@
 </style>
 </head>
 <body>
+<div class="auth-bar" id="auth-bar">
+  <div id="auth-signed-out"><button class="pill" id="signin-btn">🔑 Sign in with Google to track progress &amp; submit assignments</button></div>
+  <div id="auth-signed-in" style="display:none;">
+    <img id="auth-avatar" src="" alt="">
+    <span id="auth-name"></span>
+    <span class="status-badge" id="auth-status"></span>
+    <a id="admin-link" href="admin.html" style="display:none;">🛠 Admin Dashboard →</a>
+    <button class="pill secondary" id="signout-btn">Sign out</button>
+  </div>
+</div>
 <div class="hero">
   <h1>PPS-1 Survival Guide 🎮</h1>
   <p>Programming for Problem Solving – 1, but make it make sense. Same 15 experiments, same 45 sessions — rebuilt with analogies that don't put you to sleep, discussion prompts for your study group, and quizzes you can actually click through.</p>
@@ -216,7 +229,15 @@
         <p class="quiz-question">2. Which unit sequences the execution of instructions?</p>
         <div class="quiz-options" data-correct="2"><button class="quiz-opt" data-idx="0" onclick="handleQuizClick(this)">ALU</button><button class="quiz-opt" data-idx="1" onclick="handleQuizClick(this)">Output Unit</button><button class="quiz-opt" data-idx="2" onclick="handleQuizClick(this)">Control Unit</button><button class="quiz-opt" data-idx="3" onclick="handleQuizClick(this)">Bus</button></div></div><div class="quiz-q">
         <p class="quiz-question">3. A keyboard is an example of a(n):</p>
-        <div class="quiz-options" data-correct="1"><button class="quiz-opt" data-idx="0" onclick="handleQuizClick(this)">Output device</button><button class="quiz-opt" data-idx="1" onclick="handleQuizClick(this)">Input device</button><button class="quiz-opt" data-idx="2" onclick="handleQuizClick(this)">Storage device</button><button class="quiz-opt" data-idx="3" onclick="handleQuizClick(this)">Processing unit</button></div></div></div><div class="callout takeaway"><div class="callout-label">🔑 Key Takeaways</div><ul><li>A computer has five core units: input, output, memory, control unit, and ALU.</li><li>The control unit sequences instruction execution; the ALU performs the actual calculations.</li><li>Memory stores both the running program and its data.</li><li>Overall speed depends on processor performance, memory capacity, and bus design together, not any one factor alone.</li></ul></div></div><div class="session-card" id="sess-0-1"><div class="session-head">
+        <div class="quiz-options" data-correct="1"><button class="quiz-opt" data-idx="0" onclick="handleQuizClick(this)">Output device</button><button class="quiz-opt" data-idx="1" onclick="handleQuizClick(this)">Input device</button><button class="quiz-opt" data-idx="2" onclick="handleQuizClick(this)">Storage device</button><button class="quiz-opt" data-idx="3" onclick="handleQuizClick(this)">Processing unit</button></div></div></div><div class="callout takeaway"><div class="callout-label">🔑 Key Takeaways</div><ul><li>A computer has five core units: input, output, memory, control unit, and ALU.</li><li>The control unit sequences instruction execution; the ALU performs the actual calculations.</li><li>Memory stores both the running program and its data.</li><li>Overall speed depends on processor performance, memory capacity, and bus design together, not any one factor alone.</li></ul></div><div class="submit-block" id="submit-block-sess-0-0">
+      <div class="block-label">📤 Submit Your Case Study</div>
+      <p class="submit-hint">Write your code/answers for the assignment problems above. Sign in and get approved by the instructor to submit — your work is saved so you (and the instructor) can see your progress.</p>
+      <textarea class="submit-text" id="submit-text-sess-0-0" data-sid="sess-0-0" placeholder="Sign in to submit your work..." disabled></textarea>
+      <div class="submit-row">
+        <button class="pill submit-btn" id="submit-btn-sess-0-0" data-sid="sess-0-0" disabled>Submit</button>
+        <span class="submit-status" id="submit-status-sess-0-0"></span>
+      </div>
+    </div></div><div class="session-card" id="sess-0-1"><div class="session-head">
     <label class="done-toggle">
       <input type="checkbox" class="done-check" data-sid="sess-0-1">
       <span class="checkmark"></span>
@@ -236,7 +257,15 @@
         <p class="quiz-question">2. What does the Program Counter (PC) hold?</p>
         <div class="quiz-options" data-correct="1"><button class="quiz-opt" data-idx="0" onclick="handleQuizClick(this)">The result of the last operation</button><button class="quiz-opt" data-idx="1" onclick="handleQuizClick(this)">The address of the next instruction</button><button class="quiz-opt" data-idx="2" onclick="handleQuizClick(this)">The total memory size</button><button class="quiz-opt" data-idx="3" onclick="handleQuizClick(this)">The clock speed</button></div></div><div class="quiz-q">
         <p class="quiz-question">3. Von Neumann architecture stores instructions and data:</p>
-        <div class="quiz-options" data-correct="1"><button class="quiz-opt" data-idx="0" onclick="handleQuizClick(this)">In separate memories</button><button class="quiz-opt" data-idx="1" onclick="handleQuizClick(this)">In the same memory</button><button class="quiz-opt" data-idx="2" onclick="handleQuizClick(this)">Only in registers</button><button class="quiz-opt" data-idx="3" onclick="handleQuizClick(this)">Only on disk</button></div></div></div><div class="callout takeaway"><div class="callout-label">🔑 Key Takeaways</div><ul><li>The stored-program model keeps both instructions and data in the same memory.</li><li>Every instruction passes through fetch, decode, and execute stages, driven by the Program Counter.</li><li>This model is why software can be changed simply by loading a different program into memory.</li><li>The Harvard architecture is a contrasting design that keeps instruction and data memory physically separate.</li></ul></div></div><div class="session-card" id="sess-0-2"><div class="session-head">
+        <div class="quiz-options" data-correct="1"><button class="quiz-opt" data-idx="0" onclick="handleQuizClick(this)">In separate memories</button><button class="quiz-opt" data-idx="1" onclick="handleQuizClick(this)">In the same memory</button><button class="quiz-opt" data-idx="2" onclick="handleQuizClick(this)">Only in registers</button><button class="quiz-opt" data-idx="3" onclick="handleQuizClick(this)">Only on disk</button></div></div></div><div class="callout takeaway"><div class="callout-label">🔑 Key Takeaways</div><ul><li>The stored-program model keeps both instructions and data in the same memory.</li><li>Every instruction passes through fetch, decode, and execute stages, driven by the Program Counter.</li><li>This model is why software can be changed simply by loading a different program into memory.</li><li>The Harvard architecture is a contrasting design that keeps instruction and data memory physically separate.</li></ul></div><div class="submit-block" id="submit-block-sess-0-1">
+      <div class="block-label">📤 Submit Your Case Study</div>
+      <p class="submit-hint">Write your code/answers for the assignment problems above. Sign in and get approved by the instructor to submit — your work is saved so you (and the instructor) can see your progress.</p>
+      <textarea class="submit-text" id="submit-text-sess-0-1" data-sid="sess-0-1" placeholder="Sign in to submit your work..." disabled></textarea>
+      <div class="submit-row">
+        <button class="pill submit-btn" id="submit-btn-sess-0-1" data-sid="sess-0-1" disabled>Submit</button>
+        <span class="submit-status" id="submit-status-sess-0-1"></span>
+      </div>
+    </div></div><div class="session-card" id="sess-0-2"><div class="session-head">
     <label class="done-toggle">
       <input type="checkbox" class="done-check" data-sid="sess-0-2">
       <span class="checkmark"></span>
@@ -273,7 +302,15 @@ Storage check: a 4x4 grayscale image has 16 pixels x 8 bits/pixel = 128 bits = 1
         <p class="quiz-question">2. How many bits are in a byte?</p>
         <div class="quiz-options" data-correct="1"><button class="quiz-opt" data-idx="0" onclick="handleQuizClick(this)">4</button><button class="quiz-opt" data-idx="1" onclick="handleQuizClick(this)">8</button><button class="quiz-opt" data-idx="2" onclick="handleQuizClick(this)">10</button><button class="quiz-opt" data-idx="3" onclick="handleQuizClick(this)">16</button></div></div><div class="quiz-q">
         <p class="quiz-question">3. The hexadecimal digit 'F' represents which decimal value?</p>
-        <div class="quiz-options" data-correct="2"><button class="quiz-opt" data-idx="0" onclick="handleQuizClick(this)">10</button><button class="quiz-opt" data-idx="1" onclick="handleQuizClick(this)">14</button><button class="quiz-opt" data-idx="2" onclick="handleQuizClick(this)">15</button><button class="quiz-opt" data-idx="3" onclick="handleQuizClick(this)">16</button></div></div></div><div class="callout takeaway"><div class="callout-label">🔑 Key Takeaways</div><ul><li>Binary, octal, and hexadecimal are alternate ways of writing the same numeric value.</li><li>A nibble is 4 bits; a byte is 8 bits (two nibbles), which is why hex pairs like 0xAD map neatly to bytes.</li><li>Image storage scales with bit depth per pixel: 1 bit (B/W), 8 bits (grayscale), 24 bits (RGB).</li><li>Audio and video storage scales with sampling rate, bit depth, and (for video) frame rate.</li></ul></div></div></div></details>
+        <div class="quiz-options" data-correct="2"><button class="quiz-opt" data-idx="0" onclick="handleQuizClick(this)">10</button><button class="quiz-opt" data-idx="1" onclick="handleQuizClick(this)">14</button><button class="quiz-opt" data-idx="2" onclick="handleQuizClick(this)">15</button><button class="quiz-opt" data-idx="3" onclick="handleQuizClick(this)">16</button></div></div></div><div class="callout takeaway"><div class="callout-label">🔑 Key Takeaways</div><ul><li>Binary, octal, and hexadecimal are alternate ways of writing the same numeric value.</li><li>A nibble is 4 bits; a byte is 8 bits (two nibbles), which is why hex pairs like 0xAD map neatly to bytes.</li><li>Image storage scales with bit depth per pixel: 1 bit (B/W), 8 bits (grayscale), 24 bits (RGB).</li><li>Audio and video storage scales with sampling rate, bit depth, and (for video) frame rate.</li></ul></div><div class="submit-block" id="submit-block-sess-0-2">
+      <div class="block-label">📤 Submit Your Case Study</div>
+      <p class="submit-hint">Write your code/answers for the assignment problems above. Sign in and get approved by the instructor to submit — your work is saved so you (and the instructor) can see your progress.</p>
+      <textarea class="submit-text" id="submit-text-sess-0-2" data-sid="sess-0-2" placeholder="Sign in to submit your work..." disabled></textarea>
+      <div class="submit-row">
+        <button class="pill submit-btn" id="submit-btn-sess-0-2" data-sid="sess-0-2" disabled>Submit</button>
+        <span class="submit-status" id="submit-status-sess-0-2"></span>
+      </div>
+    </div></div></div></details>
 <details class="experiment" >
     <summary>
       <span class="exp-num">Exp 2</span>
@@ -317,7 +354,15 @@ Odd</pre></div></details></div><div class="callout assign"><div class="callout-l
         <p class="quiz-question">2. Which symbol represents a decision (yes/no branch)?</p>
         <div class="quiz-options" data-correct="1"><button class="quiz-opt" data-idx="0" onclick="handleQuizClick(this)">Oval</button><button class="quiz-opt" data-idx="1" onclick="handleQuizClick(this)">Diamond</button><button class="quiz-opt" data-idx="2" onclick="handleQuizClick(this)">Rectangle</button><button class="quiz-opt" data-idx="3" onclick="handleQuizClick(this)">Circle</button></div></div><div class="quiz-q">
         <p class="quiz-question">3. Which symbol represents input or output?</p>
-        <div class="quiz-options" data-correct="1"><button class="quiz-opt" data-idx="0" onclick="handleQuizClick(this)">Rectangle</button><button class="quiz-opt" data-idx="1" onclick="handleQuizClick(this)">Parallelogram</button><button class="quiz-opt" data-idx="2" onclick="handleQuizClick(this)">Oval</button><button class="quiz-opt" data-idx="3" onclick="handleQuizClick(this)">Triangle</button></div></div></div><div class="callout takeaway"><div class="callout-label">🔑 Key Takeaways</div><ul><li>A flowchart is the visual map of an algorithm; pseudocode is its plain-language, step-by-step description.</li><li>Standard symbols (terminator, input/output, process, decision) keep flowcharts consistent and readable.</li><li>Pseudocode should be detailed enough to translate almost line-by-line into real code.</li><li>Always plan the flowchart/pseudocode before writing any C code.</li></ul></div></div><div class="session-card" id="sess-1-1"><div class="session-head">
+        <div class="quiz-options" data-correct="1"><button class="quiz-opt" data-idx="0" onclick="handleQuizClick(this)">Rectangle</button><button class="quiz-opt" data-idx="1" onclick="handleQuizClick(this)">Parallelogram</button><button class="quiz-opt" data-idx="2" onclick="handleQuizClick(this)">Oval</button><button class="quiz-opt" data-idx="3" onclick="handleQuizClick(this)">Triangle</button></div></div></div><div class="callout takeaway"><div class="callout-label">🔑 Key Takeaways</div><ul><li>A flowchart is the visual map of an algorithm; pseudocode is its plain-language, step-by-step description.</li><li>Standard symbols (terminator, input/output, process, decision) keep flowcharts consistent and readable.</li><li>Pseudocode should be detailed enough to translate almost line-by-line into real code.</li><li>Always plan the flowchart/pseudocode before writing any C code.</li></ul></div><div class="submit-block" id="submit-block-sess-1-0">
+      <div class="block-label">📤 Submit Your Case Study</div>
+      <p class="submit-hint">Write your code/answers for the assignment problems above. Sign in and get approved by the instructor to submit — your work is saved so you (and the instructor) can see your progress.</p>
+      <textarea class="submit-text" id="submit-text-sess-1-0" data-sid="sess-1-0" placeholder="Sign in to submit your work..." disabled></textarea>
+      <div class="submit-row">
+        <button class="pill submit-btn" id="submit-btn-sess-1-0" data-sid="sess-1-0" disabled>Submit</button>
+        <span class="submit-status" id="submit-status-sess-1-0"></span>
+      </div>
+    </div></div><div class="session-card" id="sess-1-1"><div class="session-head">
     <label class="done-toggle">
       <input type="checkbox" class="done-check" data-sid="sess-1-1">
       <span class="checkmark"></span>
@@ -337,7 +382,15 @@ Odd</pre></div></details></div><div class="callout assign"><div class="callout-l
         <p class="quiz-question">2. 'Working backwards' means starting from:</p>
         <div class="quiz-options" data-correct="1"><button class="quiz-opt" data-idx="0" onclick="handleQuizClick(this)">The inputs</button><button class="quiz-opt" data-idx="1" onclick="handleQuizClick(this)">The desired output/goal</button><button class="quiz-opt" data-idx="2" onclick="handleQuizClick(this)">A random line of code</button><button class="quiz-opt" data-idx="3" onclick="handleQuizClick(this)">The compiler error</button></div></div><div class="quiz-q">
         <p class="quiz-question">3. Breaking a large problem into smaller ones is called:</p>
-        <div class="quiz-options" data-correct="1"><button class="quiz-opt" data-idx="0" onclick="handleQuizClick(this)">Recursion</button><button class="quiz-opt" data-idx="1" onclick="handleQuizClick(this)">Decomposition</button><button class="quiz-opt" data-idx="2" onclick="handleQuizClick(this)">Compilation</button><button class="quiz-opt" data-idx="3" onclick="handleQuizClick(this)">Debugging</button></div></div></div><div class="callout takeaway"><div class="callout-label">🔑 Key Takeaways</div><ul><li>Identify inputs, outputs, and constraints before attempting any solution.</li><li>Working backwards from the goal often reveals what intermediate steps are needed.</li><li>Breaking a big problem into smaller sub-problems makes each part easier to solve and test.</li><li>Recognizing similarities with previously solved problems saves time and effort.</li></ul></div></div><div class="session-card" id="sess-1-2"><div class="session-head">
+        <div class="quiz-options" data-correct="1"><button class="quiz-opt" data-idx="0" onclick="handleQuizClick(this)">Recursion</button><button class="quiz-opt" data-idx="1" onclick="handleQuizClick(this)">Decomposition</button><button class="quiz-opt" data-idx="2" onclick="handleQuizClick(this)">Compilation</button><button class="quiz-opt" data-idx="3" onclick="handleQuizClick(this)">Debugging</button></div></div></div><div class="callout takeaway"><div class="callout-label">🔑 Key Takeaways</div><ul><li>Identify inputs, outputs, and constraints before attempting any solution.</li><li>Working backwards from the goal often reveals what intermediate steps are needed.</li><li>Breaking a big problem into smaller sub-problems makes each part easier to solve and test.</li><li>Recognizing similarities with previously solved problems saves time and effort.</li></ul></div><div class="submit-block" id="submit-block-sess-1-1">
+      <div class="block-label">📤 Submit Your Case Study</div>
+      <p class="submit-hint">Write your code/answers for the assignment problems above. Sign in and get approved by the instructor to submit — your work is saved so you (and the instructor) can see your progress.</p>
+      <textarea class="submit-text" id="submit-text-sess-1-1" data-sid="sess-1-1" placeholder="Sign in to submit your work..." disabled></textarea>
+      <div class="submit-row">
+        <button class="pill submit-btn" id="submit-btn-sess-1-1" data-sid="sess-1-1" disabled>Submit</button>
+        <span class="submit-status" id="submit-status-sess-1-1"></span>
+      </div>
+    </div></div><div class="session-card" id="sess-1-2"><div class="session-head">
     <label class="done-toggle">
       <input type="checkbox" class="done-check" data-sid="sess-1-2">
       <span class="checkmark"></span>
@@ -374,7 +427,15 @@ int main(){
         <p class="quiz-question">2. A missing semicolon causes what kind of error?</p>
         <div class="quiz-options" data-correct="1"><button class="quiz-opt" data-idx="0" onclick="handleQuizClick(this)">Semantic error</button><button class="quiz-opt" data-idx="1" onclick="handleQuizClick(this)">Syntax error</button><button class="quiz-opt" data-idx="2" onclick="handleQuizClick(this)">Runtime warning only</button><button class="quiz-opt" data-idx="3" onclick="handleQuizClick(this)">Linker warning</button></div></div><div class="quiz-q">
         <p class="quiz-question">3. Using + instead of * in a formula, while still compiling successfully, is a:</p>
-        <div class="quiz-options" data-correct="1"><button class="quiz-opt" data-idx="0" onclick="handleQuizClick(this)">Syntax error</button><button class="quiz-opt" data-idx="1" onclick="handleQuizClick(this)">Semantic (logic) error</button><button class="quiz-opt" data-idx="2" onclick="handleQuizClick(this)">Preprocessor error</button><button class="quiz-opt" data-idx="3" onclick="handleQuizClick(this)">Linker error</button></div></div></div><div class="callout takeaway"><div class="callout-label">🔑 Key Takeaways</div><ul><li>Compilation proceeds through preprocessing, compilation, assembly, linking, and loading.</li><li>Syntax errors break language rules and stop compilation; semantic errors compile fine but give wrong results.</li><li>The preprocessor handles #include and #define before the compiler ever sees the code.</li><li>Linking combines object files and libraries into one final executable.</li></ul></div></div></div></details>
+        <div class="quiz-options" data-correct="1"><button class="quiz-opt" data-idx="0" onclick="handleQuizClick(this)">Syntax error</button><button class="quiz-opt" data-idx="1" onclick="handleQuizClick(this)">Semantic (logic) error</button><button class="quiz-opt" data-idx="2" onclick="handleQuizClick(this)">Preprocessor error</button><button class="quiz-opt" data-idx="3" onclick="handleQuizClick(this)">Linker error</button></div></div></div><div class="callout takeaway"><div class="callout-label">🔑 Key Takeaways</div><ul><li>Compilation proceeds through preprocessing, compilation, assembly, linking, and loading.</li><li>Syntax errors break language rules and stop compilation; semantic errors compile fine but give wrong results.</li><li>The preprocessor handles #include and #define before the compiler ever sees the code.</li><li>Linking combines object files and libraries into one final executable.</li></ul></div><div class="submit-block" id="submit-block-sess-1-2">
+      <div class="block-label">📤 Submit Your Case Study</div>
+      <p class="submit-hint">Write your code/answers for the assignment problems above. Sign in and get approved by the instructor to submit — your work is saved so you (and the instructor) can see your progress.</p>
+      <textarea class="submit-text" id="submit-text-sess-1-2" data-sid="sess-1-2" placeholder="Sign in to submit your work..." disabled></textarea>
+      <div class="submit-row">
+        <button class="pill submit-btn" id="submit-btn-sess-1-2" data-sid="sess-1-2" disabled>Submit</button>
+        <span class="submit-status" id="submit-status-sess-1-2"></span>
+      </div>
+    </div></div></div></details>
 <details class="experiment" >
     <summary>
       <span class="exp-num">Exp 3</span>
@@ -412,7 +473,15 @@ Initial = R (size 1 byte)</pre></div></details></div><div class="callout assign"
         <p class="quiz-question">2. Which operator returns the size (in bytes) of a type or variable?</p>
         <div class="quiz-options" data-correct="0"><button class="quiz-opt" data-idx="0" onclick="handleQuizClick(this)">sizeof</button><button class="quiz-opt" data-idx="1" onclick="handleQuizClick(this)">typeof</button><button class="quiz-opt" data-idx="2" onclick="handleQuizClick(this)">size()</button><button class="quiz-opt" data-idx="3" onclick="handleQuizClick(this)">length</button></div></div><div class="quiz-q">
         <p class="quiz-question">3. Which variable name is invalid in C?</p>
-        <div class="quiz-options" data-correct="2"><button class="quiz-opt" data-idx="0" onclick="handleQuizClick(this)">_count</button><button class="quiz-opt" data-idx="1" onclick="handleQuizClick(this)">count1</button><button class="quiz-opt" data-idx="2" onclick="handleQuizClick(this)">1count</button><button class="quiz-opt" data-idx="3" onclick="handleQuizClick(this)">countValue</button></div></div></div><div class="callout takeaway"><div class="callout-label">🔑 Key Takeaways</div><ul><li>C's basic types are char, int, float, and double, modifiable with short/long/signed/unsigned.</li><li>Always use sizeof rather than assuming a fixed byte size for a type.</li><li>Use meaningful variable names; avoid starting names with digits or using reserved keywords.</li><li>Declare constants with #define or const so fixed values are clear and cannot be changed accidentally.</li></ul></div></div><div class="session-card" id="sess-2-1"><div class="session-head">
+        <div class="quiz-options" data-correct="2"><button class="quiz-opt" data-idx="0" onclick="handleQuizClick(this)">_count</button><button class="quiz-opt" data-idx="1" onclick="handleQuizClick(this)">count1</button><button class="quiz-opt" data-idx="2" onclick="handleQuizClick(this)">1count</button><button class="quiz-opt" data-idx="3" onclick="handleQuizClick(this)">countValue</button></div></div></div><div class="callout takeaway"><div class="callout-label">🔑 Key Takeaways</div><ul><li>C's basic types are char, int, float, and double, modifiable with short/long/signed/unsigned.</li><li>Always use sizeof rather than assuming a fixed byte size for a type.</li><li>Use meaningful variable names; avoid starting names with digits or using reserved keywords.</li><li>Declare constants with #define or const so fixed values are clear and cannot be changed accidentally.</li></ul></div><div class="submit-block" id="submit-block-sess-2-0">
+      <div class="block-label">📤 Submit Your Case Study</div>
+      <p class="submit-hint">Write your code/answers for the assignment problems above. Sign in and get approved by the instructor to submit — your work is saved so you (and the instructor) can see your progress.</p>
+      <textarea class="submit-text" id="submit-text-sess-2-0" data-sid="sess-2-0" placeholder="Sign in to submit your work..." disabled></textarea>
+      <div class="submit-row">
+        <button class="pill submit-btn" id="submit-btn-sess-2-0" data-sid="sess-2-0" disabled>Submit</button>
+        <span class="submit-status" id="submit-status-sess-2-0"></span>
+      </div>
+    </div></div><div class="session-card" id="sess-2-1"><div class="session-head">
     <label class="done-toggle">
       <input type="checkbox" class="done-check" data-sid="sess-2-1">
       <span class="checkmark"></span>
@@ -444,7 +513,15 @@ int main(){
         <p class="quiz-question">2. Which operator is a bitwise AND (not logical)?</p>
         <div class="quiz-options" data-correct="1"><button class="quiz-opt" data-idx="0" onclick="handleQuizClick(this)">&amp;&amp;</button><button class="quiz-opt" data-idx="1" onclick="handleQuizClick(this)">&amp;</button><button class="quiz-opt" data-idx="2" onclick="handleQuizClick(this)">||</button><button class="quiz-opt" data-idx="3" onclick="handleQuizClick(this)">!</button></div></div><div class="quiz-q">
         <p class="quiz-question">3. Which operator is a logical AND?</p>
-        <div class="quiz-options" data-correct="1"><button class="quiz-opt" data-idx="0" onclick="handleQuizClick(this)">&amp;</button><button class="quiz-opt" data-idx="1" onclick="handleQuizClick(this)">&amp;&amp;</button><button class="quiz-opt" data-idx="2" onclick="handleQuizClick(this)">|</button><button class="quiz-opt" data-idx="3" onclick="handleQuizClick(this)">^</button></div></div></div><div class="callout takeaway"><div class="callout-label">🔑 Key Takeaways</div><ul><li>Relational operators (&gt;, &lt;, ==, etc.) always evaluate to 1 (true) or 0 (false) in C.</li><li>Logical operators (&amp;&amp;, ||, !) short-circuit — the second operand may not even be evaluated.</li><li>Bitwise operators (&amp;, |, ^, ~, &lt;&lt;, &gt;&gt;) act on individual bits and are unrelated to logical operators.</li><li>Operator precedence determines evaluation order — multiplication/division bind tighter than addition/subtraction.</li></ul></div></div><div class="session-card" id="sess-2-2"><div class="session-head">
+        <div class="quiz-options" data-correct="1"><button class="quiz-opt" data-idx="0" onclick="handleQuizClick(this)">&amp;</button><button class="quiz-opt" data-idx="1" onclick="handleQuizClick(this)">&amp;&amp;</button><button class="quiz-opt" data-idx="2" onclick="handleQuizClick(this)">|</button><button class="quiz-opt" data-idx="3" onclick="handleQuizClick(this)">^</button></div></div></div><div class="callout takeaway"><div class="callout-label">🔑 Key Takeaways</div><ul><li>Relational operators (&gt;, &lt;, ==, etc.) always evaluate to 1 (true) or 0 (false) in C.</li><li>Logical operators (&amp;&amp;, ||, !) short-circuit — the second operand may not even be evaluated.</li><li>Bitwise operators (&amp;, |, ^, ~, &lt;&lt;, &gt;&gt;) act on individual bits and are unrelated to logical operators.</li><li>Operator precedence determines evaluation order — multiplication/division bind tighter than addition/subtraction.</li></ul></div><div class="submit-block" id="submit-block-sess-2-1">
+      <div class="block-label">📤 Submit Your Case Study</div>
+      <p class="submit-hint">Write your code/answers for the assignment problems above. Sign in and get approved by the instructor to submit — your work is saved so you (and the instructor) can see your progress.</p>
+      <textarea class="submit-text" id="submit-text-sess-2-1" data-sid="sess-2-1" placeholder="Sign in to submit your work..." disabled></textarea>
+      <div class="submit-row">
+        <button class="pill submit-btn" id="submit-btn-sess-2-1" data-sid="sess-2-1" disabled>Submit</button>
+        <span class="submit-status" id="submit-status-sess-2-1"></span>
+      </div>
+    </div></div><div class="session-card" id="sess-2-2"><div class="session-head">
     <label class="done-toggle">
       <input type="checkbox" class="done-check" data-sid="sess-2-2">
       <span class="checkmark"></span>
@@ -473,7 +550,15 @@ Larger value = 7</pre></div></details></div><div class="callout assign"><div cla
         <p class="quiz-question">2. What is printed by: int a = 5; printf("%d", ++a);</p>
         <div class="quiz-options" data-correct="1"><button class="quiz-opt" data-idx="0" onclick="handleQuizClick(this)">5</button><button class="quiz-opt" data-idx="1" onclick="handleQuizClick(this)">6</button><button class="quiz-opt" data-idx="2" onclick="handleQuizClick(this)">4</button><button class="quiz-opt" data-idx="3" onclick="handleQuizClick(this)">Undefined</button></div></div><div class="quiz-q">
         <p class="quiz-question">3. What is printed by: int a = 5; printf("%d", a++);</p>
-        <div class="quiz-options" data-correct="0"><button class="quiz-opt" data-idx="0" onclick="handleQuizClick(this)">5</button><button class="quiz-opt" data-idx="1" onclick="handleQuizClick(this)">6</button><button class="quiz-opt" data-idx="2" onclick="handleQuizClick(this)">4</button><button class="quiz-opt" data-idx="3" onclick="handleQuizClick(this)">Undefined</button></div></div></div><div class="callout takeaway"><div class="callout-label">🔑 Key Takeaways</div><ul><li>Implicit conversion happens automatically when mixing types; explicit casting, like (float)x, is done intentionally.</li><li>Pre-increment (++a) changes the value before it is used; post-increment (a++) changes it after.</li><li>Compound assignment operators (+=, -=, *=, /=) are shorthand for 'apply the operator and store back'.</li><li>The conditional operator (cond ? a : b) is an expression with a value, usable inside printf or assignments.</li></ul></div></div></div></details>
+        <div class="quiz-options" data-correct="0"><button class="quiz-opt" data-idx="0" onclick="handleQuizClick(this)">5</button><button class="quiz-opt" data-idx="1" onclick="handleQuizClick(this)">6</button><button class="quiz-opt" data-idx="2" onclick="handleQuizClick(this)">4</button><button class="quiz-opt" data-idx="3" onclick="handleQuizClick(this)">Undefined</button></div></div></div><div class="callout takeaway"><div class="callout-label">🔑 Key Takeaways</div><ul><li>Implicit conversion happens automatically when mixing types; explicit casting, like (float)x, is done intentionally.</li><li>Pre-increment (++a) changes the value before it is used; post-increment (a++) changes it after.</li><li>Compound assignment operators (+=, -=, *=, /=) are shorthand for 'apply the operator and store back'.</li><li>The conditional operator (cond ? a : b) is an expression with a value, usable inside printf or assignments.</li></ul></div><div class="submit-block" id="submit-block-sess-2-2">
+      <div class="block-label">📤 Submit Your Case Study</div>
+      <p class="submit-hint">Write your code/answers for the assignment problems above. Sign in and get approved by the instructor to submit — your work is saved so you (and the instructor) can see your progress.</p>
+      <textarea class="submit-text" id="submit-text-sess-2-2" data-sid="sess-2-2" placeholder="Sign in to submit your work..." disabled></textarea>
+      <div class="submit-row">
+        <button class="pill submit-btn" id="submit-btn-sess-2-2" data-sid="sess-2-2" disabled>Submit</button>
+        <span class="submit-status" id="submit-status-sess-2-2"></span>
+      </div>
+    </div></div></div></details>
 <details class="experiment" >
     <summary>
       <span class="exp-num">Exp 4</span>
@@ -517,7 +602,15 @@ int main(){
         <p class="quiz-question">2. In an else-if ladder, execution stops:</p>
         <div class="quiz-options" data-correct="1"><button class="quiz-opt" data-idx="0" onclick="handleQuizClick(this)">Only at the last condition</button><button class="quiz-opt" data-idx="1" onclick="handleQuizClick(this)">At the first true condition</button><button class="quiz-opt" data-idx="2" onclick="handleQuizClick(this)">At every true condition</button><button class="quiz-opt" data-idx="3" onclick="handleQuizClick(this)">Never; all branches run</button></div></div><div class="quiz-q">
         <p class="quiz-question">3. An else always binds to:</p>
-        <div class="quiz-options" data-correct="1"><button class="quiz-opt" data-idx="0" onclick="handleQuizClick(this)">The first if in the file</button><button class="quiz-opt" data-idx="1" onclick="handleQuizClick(this)">The nearest unmatched if</button><button class="quiz-opt" data-idx="2" onclick="handleQuizClick(this)">The last if in the program</button><button class="quiz-opt" data-idx="3" onclick="handleQuizClick(this)">No if; it is standalone</button></div></div></div><div class="callout takeaway"><div class="callout-label">🔑 Key Takeaways</div><ul><li>if-else handles two-way decisions; else-if ladders handle multiple ordered conditions.</li><li>else always binds to the nearest unmatched if — consistent indentation avoids confusion, even though C ignores whitespace.</li><li>An else-if ladder stops at the first true condition, so order conditions from most to least specific.</li><li>Nested ifs should generally be limited to two or three levels before refactoring for clarity.</li></ul></div></div><div class="session-card" id="sess-3-1"><div class="session-head">
+        <div class="quiz-options" data-correct="1"><button class="quiz-opt" data-idx="0" onclick="handleQuizClick(this)">The first if in the file</button><button class="quiz-opt" data-idx="1" onclick="handleQuizClick(this)">The nearest unmatched if</button><button class="quiz-opt" data-idx="2" onclick="handleQuizClick(this)">The last if in the program</button><button class="quiz-opt" data-idx="3" onclick="handleQuizClick(this)">No if; it is standalone</button></div></div></div><div class="callout takeaway"><div class="callout-label">🔑 Key Takeaways</div><ul><li>if-else handles two-way decisions; else-if ladders handle multiple ordered conditions.</li><li>else always binds to the nearest unmatched if — consistent indentation avoids confusion, even though C ignores whitespace.</li><li>An else-if ladder stops at the first true condition, so order conditions from most to least specific.</li><li>Nested ifs should generally be limited to two or three levels before refactoring for clarity.</li></ul></div><div class="submit-block" id="submit-block-sess-3-0">
+      <div class="block-label">📤 Submit Your Case Study</div>
+      <p class="submit-hint">Write your code/answers for the assignment problems above. Sign in and get approved by the instructor to submit — your work is saved so you (and the instructor) can see your progress.</p>
+      <textarea class="submit-text" id="submit-text-sess-3-0" data-sid="sess-3-0" placeholder="Sign in to submit your work..." disabled></textarea>
+      <div class="submit-row">
+        <button class="pill submit-btn" id="submit-btn-sess-3-0" data-sid="sess-3-0" disabled>Submit</button>
+        <span class="submit-status" id="submit-status-sess-3-0"></span>
+      </div>
+    </div></div><div class="session-card" id="sess-3-1"><div class="session-head">
     <label class="done-toggle">
       <input type="checkbox" class="done-check" data-sid="sess-3-1">
       <span class="checkmark"></span>
@@ -552,7 +645,15 @@ int main(){
         <p class="quiz-question">2. What happens if break is omitted from a case?</p>
         <div class="quiz-options" data-correct="1"><button class="quiz-opt" data-idx="0" onclick="handleQuizClick(this)">A compile error occurs</button><button class="quiz-opt" data-idx="1" onclick="handleQuizClick(this)">Execution falls through to the next case</button><button class="quiz-opt" data-idx="2" onclick="handleQuizClick(this)">The switch is skipped entirely</button><button class="quiz-opt" data-idx="3" onclick="handleQuizClick(this)">The program crashes immediately</button></div></div><div class="quiz-q">
         <p class="quiz-question">3. Top-down design starts by:</p>
-        <div class="quiz-options" data-correct="1"><button class="quiz-opt" data-idx="0" onclick="handleQuizClick(this)">Writing the smallest function first</button><button class="quiz-opt" data-idx="1" onclick="handleQuizClick(this)">Considering the whole problem, then splitting it into sub-problems</button><button class="quiz-opt" data-idx="2" onclick="handleQuizClick(this)">Testing edge cases only</button><button class="quiz-opt" data-idx="3" onclick="handleQuizClick(this)">Avoiding functions altogether</button></div></div></div><div class="callout takeaway"><div class="callout-label">🔑 Key Takeaways</div><ul><li>switch tests one variable for equality against constant case values only — it cannot test ranges.</li><li>Always include break at the end of each case, unless intentional fall-through is desired.</li><li>Top-down design starts from the whole problem and repeatedly splits it into smaller sub-problems.</li><li>A menu-driven program is a natural application of switch-based, top-down design.</li></ul></div></div><div class="session-card" id="sess-3-2"><div class="session-head">
+        <div class="quiz-options" data-correct="1"><button class="quiz-opt" data-idx="0" onclick="handleQuizClick(this)">Writing the smallest function first</button><button class="quiz-opt" data-idx="1" onclick="handleQuizClick(this)">Considering the whole problem, then splitting it into sub-problems</button><button class="quiz-opt" data-idx="2" onclick="handleQuizClick(this)">Testing edge cases only</button><button class="quiz-opt" data-idx="3" onclick="handleQuizClick(this)">Avoiding functions altogether</button></div></div></div><div class="callout takeaway"><div class="callout-label">🔑 Key Takeaways</div><ul><li>switch tests one variable for equality against constant case values only — it cannot test ranges.</li><li>Always include break at the end of each case, unless intentional fall-through is desired.</li><li>Top-down design starts from the whole problem and repeatedly splits it into smaller sub-problems.</li><li>A menu-driven program is a natural application of switch-based, top-down design.</li></ul></div><div class="submit-block" id="submit-block-sess-3-1">
+      <div class="block-label">📤 Submit Your Case Study</div>
+      <p class="submit-hint">Write your code/answers for the assignment problems above. Sign in and get approved by the instructor to submit — your work is saved so you (and the instructor) can see your progress.</p>
+      <textarea class="submit-text" id="submit-text-sess-3-1" data-sid="sess-3-1" placeholder="Sign in to submit your work..." disabled></textarea>
+      <div class="submit-row">
+        <button class="pill submit-btn" id="submit-btn-sess-3-1" data-sid="sess-3-1" disabled>Submit</button>
+        <span class="submit-status" id="submit-status-sess-3-1"></span>
+      </div>
+    </div></div><div class="session-card" id="sess-3-2"><div class="session-head">
     <label class="done-toggle">
       <input type="checkbox" class="done-check" data-sid="sess-3-2">
       <span class="checkmark"></span>
@@ -581,7 +682,15 @@ int main(){
         <p class="quiz-question">2. Which loop form keeps initialization, condition, and update together on one line?</p>
         <div class="quiz-options" data-correct="2"><button class="quiz-opt" data-idx="0" onclick="handleQuizClick(this)">while</button><button class="quiz-opt" data-idx="1" onclick="handleQuizClick(this)">do-while</button><button class="quiz-opt" data-idx="2" onclick="handleQuizClick(this)">for</button><button class="quiz-opt" data-idx="3" onclick="handleQuizClick(this)">goto</button></div></div><div class="quiz-q">
         <p class="quiz-question">3. break inside a loop:</p>
-        <div class="quiz-options" data-correct="1"><button class="quiz-opt" data-idx="0" onclick="handleQuizClick(this)">Skips only the current iteration</button><button class="quiz-opt" data-idx="1" onclick="handleQuizClick(this)">Exits the loop immediately</button><button class="quiz-opt" data-idx="2" onclick="handleQuizClick(this)">Restarts the loop from zero</button><button class="quiz-opt" data-idx="3" onclick="handleQuizClick(this)">Has no effect</button></div></div></div><div class="callout takeaway"><div class="callout-label">🔑 Key Takeaways</div><ul><li>for suits a known number of repetitions; while suits condition-driven repetition; do-while runs its body at least once.</li><li>break exits a loop immediately; continue skips only the rest of the current iteration.</li><li>A loop needs initialization, a condition, and an update step to avoid running forever.</li><li>goto exists in C but is rarely used because it can make control flow hard to follow.</li></ul></div></div></div></details>
+        <div class="quiz-options" data-correct="1"><button class="quiz-opt" data-idx="0" onclick="handleQuizClick(this)">Skips only the current iteration</button><button class="quiz-opt" data-idx="1" onclick="handleQuizClick(this)">Exits the loop immediately</button><button class="quiz-opt" data-idx="2" onclick="handleQuizClick(this)">Restarts the loop from zero</button><button class="quiz-opt" data-idx="3" onclick="handleQuizClick(this)">Has no effect</button></div></div></div><div class="callout takeaway"><div class="callout-label">🔑 Key Takeaways</div><ul><li>for suits a known number of repetitions; while suits condition-driven repetition; do-while runs its body at least once.</li><li>break exits a loop immediately; continue skips only the rest of the current iteration.</li><li>A loop needs initialization, a condition, and an update step to avoid running forever.</li><li>goto exists in C but is rarely used because it can make control flow hard to follow.</li></ul></div><div class="submit-block" id="submit-block-sess-3-2">
+      <div class="block-label">📤 Submit Your Case Study</div>
+      <p class="submit-hint">Write your code/answers for the assignment problems above. Sign in and get approved by the instructor to submit — your work is saved so you (and the instructor) can see your progress.</p>
+      <textarea class="submit-text" id="submit-text-sess-3-2" data-sid="sess-3-2" placeholder="Sign in to submit your work..." disabled></textarea>
+      <div class="submit-row">
+        <button class="pill submit-btn" id="submit-btn-sess-3-2" data-sid="sess-3-2" disabled>Submit</button>
+        <span class="submit-status" id="submit-status-sess-3-2"></span>
+      </div>
+    </div></div></div></details>
 <details class="experiment" >
     <summary>
       <span class="exp-num">Exp 5</span>
@@ -623,7 +732,15 @@ Average = 84.00</pre></div></details></div><div class="callout assign"><div clas
         <p class="quiz-question">2. A function should ideally:</p>
         <div class="quiz-options" data-correct="1"><button class="quiz-opt" data-idx="0" onclick="handleQuizClick(this)">Do many unrelated jobs at once</button><button class="quiz-opt" data-idx="1" onclick="handleQuizClick(this)">Do exactly one clearly defined job</button><button class="quiz-opt" data-idx="2" onclick="handleQuizClick(this)">Never return a value</button><button class="quiz-opt" data-idx="3" onclick="handleQuizClick(this)">Always modify global variables</button></div></div><div class="quiz-q">
         <p class="quiz-question">3. Which best describes largest(a, b, c) from the Monday example?</p>
-        <div class="quiz-options" data-correct="1"><button class="quiz-opt" data-idx="0" onclick="handleQuizClick(this)">It reads user input directly</button><button class="quiz-opt" data-idx="1" onclick="handleQuizClick(this)">It returns the largest of three given values</button><button class="quiz-opt" data-idx="2" onclick="handleQuizClick(this)">It always returns a</button><button class="quiz-opt" data-idx="3" onclick="handleQuizClick(this)">It sorts an array</button></div></div></div><div class="callout takeaway"><div class="callout-label">🔑 Key Takeaways</div><ul><li>Modularity divides a solution into smaller, independently testable units.</li><li>Each function should do exactly one job, described clearly by its name.</li><li>Building a program from small functions mirrors the top-down design approach.</li><li>Modular programs are easier to debug because each function can be verified in isolation.</li></ul></div></div><div class="session-card" id="sess-4-1"><div class="session-head">
+        <div class="quiz-options" data-correct="1"><button class="quiz-opt" data-idx="0" onclick="handleQuizClick(this)">It reads user input directly</button><button class="quiz-opt" data-idx="1" onclick="handleQuizClick(this)">It returns the largest of three given values</button><button class="quiz-opt" data-idx="2" onclick="handleQuizClick(this)">It always returns a</button><button class="quiz-opt" data-idx="3" onclick="handleQuizClick(this)">It sorts an array</button></div></div></div><div class="callout takeaway"><div class="callout-label">🔑 Key Takeaways</div><ul><li>Modularity divides a solution into smaller, independently testable units.</li><li>Each function should do exactly one job, described clearly by its name.</li><li>Building a program from small functions mirrors the top-down design approach.</li><li>Modular programs are easier to debug because each function can be verified in isolation.</li></ul></div><div class="submit-block" id="submit-block-sess-4-0">
+      <div class="block-label">📤 Submit Your Case Study</div>
+      <p class="submit-hint">Write your code/answers for the assignment problems above. Sign in and get approved by the instructor to submit — your work is saved so you (and the instructor) can see your progress.</p>
+      <textarea class="submit-text" id="submit-text-sess-4-0" data-sid="sess-4-0" placeholder="Sign in to submit your work..." disabled></textarea>
+      <div class="submit-row">
+        <button class="pill submit-btn" id="submit-btn-sess-4-0" data-sid="sess-4-0" disabled>Submit</button>
+        <span class="submit-status" id="submit-status-sess-4-0"></span>
+      </div>
+    </div></div><div class="session-card" id="sess-4-1"><div class="session-head">
     <label class="done-toggle">
       <input type="checkbox" class="done-check" data-sid="sess-4-1">
       <span class="checkmark"></span>
@@ -655,7 +772,15 @@ Debugging note: the off-by-one bug (using &lt;= instead of &lt;) reads memory pa
         <p class="quiz-question">2. A good comment typically explains:</p>
         <div class="quiz-options" data-correct="1"><button class="quiz-opt" data-idx="0" onclick="handleQuizClick(this)">What the syntax obviously already shows</button><button class="quiz-opt" data-idx="1" onclick="handleQuizClick(this)">Why the code does something, or an important assumption</button><button class="quiz-opt" data-idx="2" onclick="handleQuizClick(this)">Nothing; comments are unnecessary</button><button class="quiz-opt" data-idx="3" onclick="handleQuizClick(this)">Only the author's name</button></div></div><div class="quiz-q">
         <p class="quiz-question">3. A recommended debugging habit is to:</p>
-        <div class="quiz-options" data-correct="1"><button class="quiz-opt" data-idx="0" onclick="handleQuizClick(this)">Change many things at once to save time</button><button class="quiz-opt" data-idx="1" onclick="handleQuizClick(this)">Test with one small, known case first</button><button class="quiz-opt" data-idx="2" onclick="handleQuizClick(this)">Avoid print statements entirely</button><button class="quiz-opt" data-idx="3" onclick="handleQuizClick(this)">Skip testing edge cases</button></div></div></div><div class="callout takeaway"><div class="callout-label">🔑 Key Takeaways</div><ul><li>Meaningful variable names make code self-documenting and easier to maintain.</li><li>Comments should explain intent (why), not restate what the code obviously already says.</li><li>Debug by isolating the smallest failing case and changing one thing at a time.</li><li>A good header comment states a function's inputs, assumptions, and expected output.</li></ul></div></div><div class="session-card" id="sess-4-2"><div class="session-head">
+        <div class="quiz-options" data-correct="1"><button class="quiz-opt" data-idx="0" onclick="handleQuizClick(this)">Change many things at once to save time</button><button class="quiz-opt" data-idx="1" onclick="handleQuizClick(this)">Test with one small, known case first</button><button class="quiz-opt" data-idx="2" onclick="handleQuizClick(this)">Avoid print statements entirely</button><button class="quiz-opt" data-idx="3" onclick="handleQuizClick(this)">Skip testing edge cases</button></div></div></div><div class="callout takeaway"><div class="callout-label">🔑 Key Takeaways</div><ul><li>Meaningful variable names make code self-documenting and easier to maintain.</li><li>Comments should explain intent (why), not restate what the code obviously already says.</li><li>Debug by isolating the smallest failing case and changing one thing at a time.</li><li>A good header comment states a function's inputs, assumptions, and expected output.</li></ul></div><div class="submit-block" id="submit-block-sess-4-1">
+      <div class="block-label">📤 Submit Your Case Study</div>
+      <p class="submit-hint">Write your code/answers for the assignment problems above. Sign in and get approved by the instructor to submit — your work is saved so you (and the instructor) can see your progress.</p>
+      <textarea class="submit-text" id="submit-text-sess-4-1" data-sid="sess-4-1" placeholder="Sign in to submit your work..." disabled></textarea>
+      <div class="submit-row">
+        <button class="pill submit-btn" id="submit-btn-sess-4-1" data-sid="sess-4-1" disabled>Submit</button>
+        <span class="submit-status" id="submit-status-sess-4-1"></span>
+      </div>
+    </div></div><div class="session-card" id="sess-4-2"><div class="session-head">
     <label class="done-toggle">
       <input type="checkbox" class="done-check" data-sid="sess-4-2">
       <span class="checkmark"></span>
@@ -690,7 +815,15 @@ Running total = 30</pre></div></details></div><div class="callout assign"><div c
         <p class="quiz-question">2. A function's declared return type tells the caller:</p>
         <div class="quiz-options" data-correct="1"><button class="quiz-opt" data-idx="0" onclick="handleQuizClick(this)">Nothing useful</button><button class="quiz-opt" data-idx="1" onclick="handleQuizClick(this)">The kind of value it can rely on getting back</button><button class="quiz-opt" data-idx="2" onclick="handleQuizClick(this)">The function's internal variable names</button><button class="quiz-opt" data-idx="3" onclick="handleQuizClick(this)">How many parameters it has</button></div></div><div class="quiz-q">
         <p class="quiz-question">3. An external (global) variable is:</p>
-        <div class="quiz-options" data-correct="1"><button class="quiz-opt" data-idx="0" onclick="handleQuizClick(this)">Local to one function only</button><button class="quiz-opt" data-idx="1" onclick="handleQuizClick(this)">Declared outside all functions and shared across them</button><button class="quiz-opt" data-idx="2" onclick="handleQuizClick(this)">Always a constant</button><button class="quiz-opt" data-idx="3" onclick="handleQuizClick(this)">Only usable inside main()</button></div></div></div><div class="callout takeaway"><div class="callout-label">🔑 Key Takeaways</div><ul><li>Good testing covers normal, boundary, and (where relevant) invalid inputs.</li><li>A function's return type is a promise about the kind of value callers will receive.</li><li>External (global) variables are shared across functions but should be used sparingly.</li><li>Test edge cases like zero and negative numbers even when a function 'obviously' works.</li></ul></div></div></div></details>
+        <div class="quiz-options" data-correct="1"><button class="quiz-opt" data-idx="0" onclick="handleQuizClick(this)">Local to one function only</button><button class="quiz-opt" data-idx="1" onclick="handleQuizClick(this)">Declared outside all functions and shared across them</button><button class="quiz-opt" data-idx="2" onclick="handleQuizClick(this)">Always a constant</button><button class="quiz-opt" data-idx="3" onclick="handleQuizClick(this)">Only usable inside main()</button></div></div></div><div class="callout takeaway"><div class="callout-label">🔑 Key Takeaways</div><ul><li>Good testing covers normal, boundary, and (where relevant) invalid inputs.</li><li>A function's return type is a promise about the kind of value callers will receive.</li><li>External (global) variables are shared across functions but should be used sparingly.</li><li>Test edge cases like zero and negative numbers even when a function 'obviously' works.</li></ul></div><div class="submit-block" id="submit-block-sess-4-2">
+      <div class="block-label">📤 Submit Your Case Study</div>
+      <p class="submit-hint">Write your code/answers for the assignment problems above. Sign in and get approved by the instructor to submit — your work is saved so you (and the instructor) can see your progress.</p>
+      <textarea class="submit-text" id="submit-text-sess-4-2" data-sid="sess-4-2" placeholder="Sign in to submit your work..." disabled></textarea>
+      <div class="submit-row">
+        <button class="pill submit-btn" id="submit-btn-sess-4-2" data-sid="sess-4-2" disabled>Submit</button>
+        <span class="submit-status" id="submit-status-sess-4-2"></span>
+      </div>
+    </div></div></div></details>
 <details class="experiment" >
     <summary>
       <span class="exp-num">Exp 6</span>
@@ -729,7 +862,15 @@ Outer x after block = 10</pre></div></details></div><div class="callout assign">
         <p class="quiz-question">2. A variable declared inside { } has:</p>
         <div class="quiz-options" data-correct="1"><button class="quiz-opt" data-idx="0" onclick="handleQuizClick(this)">Global scope</button><button class="quiz-opt" data-idx="1" onclick="handleQuizClick(this)">Block scope</button><button class="quiz-opt" data-idx="2" onclick="handleQuizClick(this)">No scope at all</button><button class="quiz-opt" data-idx="3" onclick="handleQuizClick(this)">File scope only</button></div></div><div class="quiz-q">
         <p class="quiz-question">3. Shadowing occurs when:</p>
-        <div class="quiz-options" data-correct="1"><button class="quiz-opt" data-idx="0" onclick="handleQuizClick(this)">Two unrelated functions share a variable name with no issue</button><button class="quiz-opt" data-idx="1" onclick="handleQuizClick(this)">An inner block declares a variable with the same name as an outer one</button><button class="quiz-opt" data-idx="2" onclick="handleQuizClick(this)">A variable is deleted</button><button class="quiz-opt" data-idx="3" onclick="handleQuizClick(this)">A macro is undefined</button></div></div></div><div class="callout takeaway"><div class="callout-label">🔑 Key Takeaways</div><ul><li>Scope determines where a variable's name is valid — mainly block scope and file scope in C.</li><li>A variable declared in an inner block can shadow an outer variable of the same name.</li><li>Shadowing only affects the inner block; the outer variable is restored once that block ends.</li><li>Keep variables in the smallest scope that needs them to reduce naming conflicts.</li></ul></div></div><div class="session-card" id="sess-5-1"><div class="session-head">
+        <div class="quiz-options" data-correct="1"><button class="quiz-opt" data-idx="0" onclick="handleQuizClick(this)">Two unrelated functions share a variable name with no issue</button><button class="quiz-opt" data-idx="1" onclick="handleQuizClick(this)">An inner block declares a variable with the same name as an outer one</button><button class="quiz-opt" data-idx="2" onclick="handleQuizClick(this)">A variable is deleted</button><button class="quiz-opt" data-idx="3" onclick="handleQuizClick(this)">A macro is undefined</button></div></div></div><div class="callout takeaway"><div class="callout-label">🔑 Key Takeaways</div><ul><li>Scope determines where a variable's name is valid — mainly block scope and file scope in C.</li><li>A variable declared in an inner block can shadow an outer variable of the same name.</li><li>Shadowing only affects the inner block; the outer variable is restored once that block ends.</li><li>Keep variables in the smallest scope that needs them to reduce naming conflicts.</li></ul></div><div class="submit-block" id="submit-block-sess-5-0">
+      <div class="block-label">📤 Submit Your Case Study</div>
+      <p class="submit-hint">Write your code/answers for the assignment problems above. Sign in and get approved by the instructor to submit — your work is saved so you (and the instructor) can see your progress.</p>
+      <textarea class="submit-text" id="submit-text-sess-5-0" data-sid="sess-5-0" placeholder="Sign in to submit your work..." disabled></textarea>
+      <div class="submit-row">
+        <button class="pill submit-btn" id="submit-btn-sess-5-0" data-sid="sess-5-0" disabled>Submit</button>
+        <span class="submit-status" id="submit-status-sess-5-0"></span>
+      </div>
+    </div></div><div class="session-card" id="sess-5-1"><div class="session-head">
     <label class="done-toggle">
       <input type="checkbox" class="done-check" data-sid="sess-5-1">
       <span class="checkmark"></span>
@@ -763,7 +904,15 @@ int main(){
         <p class="quiz-question">2. A custom project header is typically included using:</p>
         <div class="quiz-options" data-correct="1"><button class="quiz-opt" data-idx="0" onclick="handleQuizClick(this)">Angle brackets</button><button class="quiz-opt" data-idx="1" onclick="handleQuizClick(this)">Double quotes</button><button class="quiz-opt" data-idx="2" onclick="handleQuizClick(this)">No punctuation</button><button class="quiz-opt" data-idx="3" onclick="handleQuizClick(this)">Parentheses</button></div></div><div class="quiz-q">
         <p class="quiz-question">3. A header file typically contains:</p>
-        <div class="quiz-options" data-correct="1"><button class="quiz-opt" data-idx="0" onclick="handleQuizClick(this)">Full function bodies only</button><button class="quiz-opt" data-idx="1" onclick="handleQuizClick(this)">Function prototypes and macro/type declarations</button><button class="quiz-opt" data-idx="2" onclick="handleQuizClick(this)">Only comments</button><button class="quiz-opt" data-idx="3" onclick="handleQuizClick(this)">Compiled machine code</button></div></div></div><div class="callout takeaway"><div class="callout-label">🔑 Key Takeaways</div><ul><li>Header files hold declarations (prototypes, macros) shared across multiple .c files.</li><li>System headers use angle brackets (&lt;...&gt;); your own headers use quotes ("...").</li><li>Always initialize variables at declaration where possible to avoid garbage values.</li><li>Header files typically declare interfaces; the .c file provides the actual implementation.</li></ul></div></div><div class="session-card" id="sess-5-2"><div class="session-head">
+        <div class="quiz-options" data-correct="1"><button class="quiz-opt" data-idx="0" onclick="handleQuizClick(this)">Full function bodies only</button><button class="quiz-opt" data-idx="1" onclick="handleQuizClick(this)">Function prototypes and macro/type declarations</button><button class="quiz-opt" data-idx="2" onclick="handleQuizClick(this)">Only comments</button><button class="quiz-opt" data-idx="3" onclick="handleQuizClick(this)">Compiled machine code</button></div></div></div><div class="callout takeaway"><div class="callout-label">🔑 Key Takeaways</div><ul><li>Header files hold declarations (prototypes, macros) shared across multiple .c files.</li><li>System headers use angle brackets (&lt;...&gt;); your own headers use quotes ("...").</li><li>Always initialize variables at declaration where possible to avoid garbage values.</li><li>Header files typically declare interfaces; the .c file provides the actual implementation.</li></ul></div><div class="submit-block" id="submit-block-sess-5-1">
+      <div class="block-label">📤 Submit Your Case Study</div>
+      <p class="submit-hint">Write your code/answers for the assignment problems above. Sign in and get approved by the instructor to submit — your work is saved so you (and the instructor) can see your progress.</p>
+      <textarea class="submit-text" id="submit-text-sess-5-1" data-sid="sess-5-1" placeholder="Sign in to submit your work..." disabled></textarea>
+      <div class="submit-row">
+        <button class="pill submit-btn" id="submit-btn-sess-5-1" data-sid="sess-5-1" disabled>Submit</button>
+        <span class="submit-status" id="submit-status-sess-5-1"></span>
+      </div>
+    </div></div><div class="session-card" id="sess-5-2"><div class="session-head">
     <label class="done-toggle">
       <input type="checkbox" class="done-check" data-sid="sess-5-2">
       <span class="checkmark"></span>
@@ -798,7 +947,15 @@ static=3 automatic=1</pre></div></details></div><div class="callout assign"><div
         <p class="quiz-question">2. A static local variable:</p>
         <div class="quiz-options" data-correct="1"><button class="quiz-opt" data-idx="0" onclick="handleQuizClick(this)">Resets to its initial value on every call</button><button class="quiz-opt" data-idx="1" onclick="handleQuizClick(this)">Retains its value between function calls</button><button class="quiz-opt" data-idx="2" onclick="handleQuizClick(this)">Cannot be initialized</button><button class="quiz-opt" data-idx="3" onclick="handleQuizClick(this)">Is visible in every file automatically</button></div></div><div class="quiz-q">
         <p class="quiz-question">3. extern is used to:</p>
-        <div class="quiz-options" data-correct="1"><button class="quiz-opt" data-idx="0" onclick="handleQuizClick(this)">Declare a brand-new local variable</button><button class="quiz-opt" data-idx="1" onclick="handleQuizClick(this)">Refer to a variable defined elsewhere (often another file)</button><button class="quiz-opt" data-idx="2" onclick="handleQuizClick(this)">Force a variable into a CPU register</button><button class="quiz-opt" data-idx="3" onclick="handleQuizClick(this)">Delete a variable</button></div></div></div><div class="callout takeaway"><div class="callout-label">🔑 Key Takeaways</div><ul><li>C has four storage classes: auto, static, extern, and register.</li><li>static local variables retain their value between function calls and initialize only once.</li><li>register is a hint to the compiler and is mostly optimized automatically by modern compilers.</li><li>Storage class controls lifetime and storage location; scope still controls visibility of the name.</li></ul></div></div></div></details>
+        <div class="quiz-options" data-correct="1"><button class="quiz-opt" data-idx="0" onclick="handleQuizClick(this)">Declare a brand-new local variable</button><button class="quiz-opt" data-idx="1" onclick="handleQuizClick(this)">Refer to a variable defined elsewhere (often another file)</button><button class="quiz-opt" data-idx="2" onclick="handleQuizClick(this)">Force a variable into a CPU register</button><button class="quiz-opt" data-idx="3" onclick="handleQuizClick(this)">Delete a variable</button></div></div></div><div class="callout takeaway"><div class="callout-label">🔑 Key Takeaways</div><ul><li>C has four storage classes: auto, static, extern, and register.</li><li>static local variables retain their value between function calls and initialize only once.</li><li>register is a hint to the compiler and is mostly optimized automatically by modern compilers.</li><li>Storage class controls lifetime and storage location; scope still controls visibility of the name.</li></ul></div><div class="submit-block" id="submit-block-sess-5-2">
+      <div class="block-label">📤 Submit Your Case Study</div>
+      <p class="submit-hint">Write your code/answers for the assignment problems above. Sign in and get approved by the instructor to submit — your work is saved so you (and the instructor) can see your progress.</p>
+      <textarea class="submit-text" id="submit-text-sess-5-2" data-sid="sess-5-2" placeholder="Sign in to submit your work..." disabled></textarea>
+      <div class="submit-row">
+        <button class="pill submit-btn" id="submit-btn-sess-5-2" data-sid="sess-5-2" disabled>Submit</button>
+        <span class="submit-status" id="submit-status-sess-5-2"></span>
+      </div>
+    </div></div></div></details>
 <details class="experiment" >
     <summary>
       <span class="exp-num">Exp 7</span>
@@ -833,7 +990,15 @@ int main(){
         <p class="quiz-question">2. In printf("%.2f", x), the .2 specifies:</p>
         <div class="quiz-options" data-correct="1"><button class="quiz-opt" data-idx="0" onclick="handleQuizClick(this)">Field width</button><button class="quiz-opt" data-idx="1" onclick="handleQuizClick(this)">Number of digits after the decimal point</button><button class="quiz-opt" data-idx="2" onclick="handleQuizClick(this)">The variable's memory address</button><button class="quiz-opt" data-idx="3" onclick="handleQuizClick(this)">The loop count</button></div></div><div class="quiz-q">
         <p class="quiz-question">3. A negative width, e.g., %-10s, causes:</p>
-        <div class="quiz-options" data-correct="1"><button class="quiz-opt" data-idx="0" onclick="handleQuizClick(this)">Right-alignment</button><button class="quiz-opt" data-idx="1" onclick="handleQuizClick(this)">Left-alignment within the field</button><button class="quiz-opt" data-idx="2" onclick="handleQuizClick(this)">A compile error</button><button class="quiz-opt" data-idx="3" onclick="handleQuizClick(this)">No effect on alignment</button></div></div></div><div class="callout takeaway"><div class="callout-label">🔑 Key Takeaways</div><ul><li>printf format specifiers follow the pattern %[width].[precision][type].</li><li>Width sets a minimum field size (padding with spaces or zeros); precision controls decimals or max string length.</li><li>A negative width left-aligns output instead of the default right-alignment.</li><li>Escape sequences like \n, \t, and \\ embed special characters inside string literals.</li></ul></div></div><div class="session-card" id="sess-6-1"><div class="session-head">
+        <div class="quiz-options" data-correct="1"><button class="quiz-opt" data-idx="0" onclick="handleQuizClick(this)">Right-alignment</button><button class="quiz-opt" data-idx="1" onclick="handleQuizClick(this)">Left-alignment within the field</button><button class="quiz-opt" data-idx="2" onclick="handleQuizClick(this)">A compile error</button><button class="quiz-opt" data-idx="3" onclick="handleQuizClick(this)">No effect on alignment</button></div></div></div><div class="callout takeaway"><div class="callout-label">🔑 Key Takeaways</div><ul><li>printf format specifiers follow the pattern %[width].[precision][type].</li><li>Width sets a minimum field size (padding with spaces or zeros); precision controls decimals or max string length.</li><li>A negative width left-aligns output instead of the default right-alignment.</li><li>Escape sequences like \n, \t, and \\ embed special characters inside string literals.</li></ul></div><div class="submit-block" id="submit-block-sess-6-0">
+      <div class="block-label">📤 Submit Your Case Study</div>
+      <p class="submit-hint">Write your code/answers for the assignment problems above. Sign in and get approved by the instructor to submit — your work is saved so you (and the instructor) can see your progress.</p>
+      <textarea class="submit-text" id="submit-text-sess-6-0" data-sid="sess-6-0" placeholder="Sign in to submit your work..." disabled></textarea>
+      <div class="submit-row">
+        <button class="pill submit-btn" id="submit-btn-sess-6-0" data-sid="sess-6-0" disabled>Submit</button>
+        <span class="submit-status" id="submit-status-sess-6-0"></span>
+      </div>
+    </div></div><div class="session-card" id="sess-6-1"><div class="session-head">
     <label class="done-toggle">
       <input type="checkbox" class="done-check" data-sid="sess-6-1">
       <span class="checkmark"></span>
@@ -865,7 +1030,15 @@ Product = 24</pre></div></details></div><div class="callout assign"><div class="
         <p class="quiz-question">2. getchar() reads:</p>
         <div class="quiz-options" data-correct="1"><button class="quiz-opt" data-idx="0" onclick="handleQuizClick(this)">An entire line</button><button class="quiz-opt" data-idx="1" onclick="handleQuizClick(this)">A single character</button><button class="quiz-opt" data-idx="2" onclick="handleQuizClick(this)">An integer</button><button class="quiz-opt" data-idx="3" onclick="handleQuizClick(this)">A float</button></div></div><div class="quiz-q">
         <p class="quiz-question">3. putchar(ch) outputs:</p>
-        <div class="quiz-options" data-correct="1"><button class="quiz-opt" data-idx="0" onclick="handleQuizClick(this)">An entire string</button><button class="quiz-opt" data-idx="1" onclick="handleQuizClick(this)">A single character</button><button class="quiz-opt" data-idx="2" onclick="handleQuizClick(this)">A formatted float</button><button class="quiz-opt" data-idx="3" onclick="handleQuizClick(this)">Nothing; it only reads input</button></div></div></div><div class="callout takeaway"><div class="callout-label">🔑 Key Takeaways</div><ul><li>scanf requires the address-of operator (&amp;) for simple variables like scanf("%d", &amp;n).</li><li>getchar() and putchar() handle exactly one character at a time.</li><li>Always consider what happens if the user enters unexpected or invalid input.</li><li>Checking scanf's return value tells you whether the input was actually read successfully.</li></ul></div></div><div class="session-card" id="sess-6-2"><div class="session-head">
+        <div class="quiz-options" data-correct="1"><button class="quiz-opt" data-idx="0" onclick="handleQuizClick(this)">An entire string</button><button class="quiz-opt" data-idx="1" onclick="handleQuizClick(this)">A single character</button><button class="quiz-opt" data-idx="2" onclick="handleQuizClick(this)">A formatted float</button><button class="quiz-opt" data-idx="3" onclick="handleQuizClick(this)">Nothing; it only reads input</button></div></div></div><div class="callout takeaway"><div class="callout-label">🔑 Key Takeaways</div><ul><li>scanf requires the address-of operator (&amp;) for simple variables like scanf("%d", &amp;n).</li><li>getchar() and putchar() handle exactly one character at a time.</li><li>Always consider what happens if the user enters unexpected or invalid input.</li><li>Checking scanf's return value tells you whether the input was actually read successfully.</li></ul></div><div class="submit-block" id="submit-block-sess-6-1">
+      <div class="block-label">📤 Submit Your Case Study</div>
+      <p class="submit-hint">Write your code/answers for the assignment problems above. Sign in and get approved by the instructor to submit — your work is saved so you (and the instructor) can see your progress.</p>
+      <textarea class="submit-text" id="submit-text-sess-6-1" data-sid="sess-6-1" placeholder="Sign in to submit your work..." disabled></textarea>
+      <div class="submit-row">
+        <button class="pill submit-btn" id="submit-btn-sess-6-1" data-sid="sess-6-1" disabled>Submit</button>
+        <span class="submit-status" id="submit-status-sess-6-1"></span>
+      </div>
+    </div></div><div class="session-card" id="sess-6-2"><div class="session-head">
     <label class="done-toggle">
       <input type="checkbox" class="done-check" data-sid="sess-6-2">
       <span class="checkmark"></span>
@@ -897,7 +1070,15 @@ atoi("245") = 245</pre></div></details></div><div class="callout assign"><div cl
         <p class="quiz-question">2. Which header provides strlen and strcmp?</p>
         <div class="quiz-options" data-correct="1"><button class="quiz-opt" data-idx="0" onclick="handleQuizClick(this)">ctype.h</button><button class="quiz-opt" data-idx="1" onclick="handleQuizClick(this)">string.h</button><button class="quiz-opt" data-idx="2" onclick="handleQuizClick(this)">math.h</button><button class="quiz-opt" data-idx="3" onclick="handleQuizClick(this)">stdio.h only</button></div></div><div class="quiz-q">
         <p class="quiz-question">3. Which header provides sqrt and pow?</p>
-        <div class="quiz-options" data-correct="2"><button class="quiz-opt" data-idx="0" onclick="handleQuizClick(this)">string.h</button><button class="quiz-opt" data-idx="1" onclick="handleQuizClick(this)">stdlib.h</button><button class="quiz-opt" data-idx="2" onclick="handleQuizClick(this)">math.h</button><button class="quiz-opt" data-idx="3" onclick="handleQuizClick(this)">ctype.h</button></div></div></div><div class="callout takeaway"><div class="callout-label">🔑 Key Takeaways</div><ul><li>ctype.h functions (isalpha, isdigit, isupper) test one character and return true/false.</li><li>string.h provides ready-made string operations like strlen, strcpy, strcmp, and strcat.</li><li>math.h functions (sqrt, pow, fabs) operate on and return double by default.</li><li>stdlib.h provides conversions (atoi, atof) and dynamic memory functions (malloc, free).</li></ul></div></div></div></details>
+        <div class="quiz-options" data-correct="2"><button class="quiz-opt" data-idx="0" onclick="handleQuizClick(this)">string.h</button><button class="quiz-opt" data-idx="1" onclick="handleQuizClick(this)">stdlib.h</button><button class="quiz-opt" data-idx="2" onclick="handleQuizClick(this)">math.h</button><button class="quiz-opt" data-idx="3" onclick="handleQuizClick(this)">ctype.h</button></div></div></div><div class="callout takeaway"><div class="callout-label">🔑 Key Takeaways</div><ul><li>ctype.h functions (isalpha, isdigit, isupper) test one character and return true/false.</li><li>string.h provides ready-made string operations like strlen, strcpy, strcmp, and strcat.</li><li>math.h functions (sqrt, pow, fabs) operate on and return double by default.</li><li>stdlib.h provides conversions (atoi, atof) and dynamic memory functions (malloc, free).</li></ul></div><div class="submit-block" id="submit-block-sess-6-2">
+      <div class="block-label">📤 Submit Your Case Study</div>
+      <p class="submit-hint">Write your code/answers for the assignment problems above. Sign in and get approved by the instructor to submit — your work is saved so you (and the instructor) can see your progress.</p>
+      <textarea class="submit-text" id="submit-text-sess-6-2" data-sid="sess-6-2" placeholder="Sign in to submit your work..." disabled></textarea>
+      <div class="submit-row">
+        <button class="pill submit-btn" id="submit-btn-sess-6-2" data-sid="sess-6-2" disabled>Submit</button>
+        <span class="submit-status" id="submit-status-sess-6-2"></span>
+      </div>
+    </div></div></div></details>
 <details class="experiment" >
     <summary>
       <span class="exp-num">Exp 8</span>
@@ -939,7 +1120,15 @@ sumOfDigits(1234) = 10</pre></div></details></div><div class="callout assign"><d
         <p class="quiz-question">2. What happens if a recursive function's base case is unreachable?</p>
         <div class="quiz-options" data-correct="1"><button class="quiz-opt" data-idx="0" onclick="handleQuizClick(this)">It runs faster</button><button class="quiz-opt" data-idx="1" onclick="handleQuizClick(this)">The call stack keeps growing until a stack overflow occurs</button><button class="quiz-opt" data-idx="2" onclick="handleQuizClick(this)">It automatically becomes a loop</button><button class="quiz-opt" data-idx="3" onclick="handleQuizClick(this)">Nothing; C prevents infinite recursion</button></div></div><div class="quiz-q">
         <p class="quiz-question">3. fact(n) = n * fact(n-1) with base case fact(1) = 1 computes:</p>
-        <div class="quiz-options" data-correct="1"><button class="quiz-opt" data-idx="0" onclick="handleQuizClick(this)">The sum of numbers from 1 to n</button><button class="quiz-opt" data-idx="1" onclick="handleQuizClick(this)">The factorial of n</button><button class="quiz-opt" data-idx="2" onclick="handleQuizClick(this)">The Fibonacci sequence</button><button class="quiz-opt" data-idx="3" onclick="handleQuizClick(this)">The square of n</button></div></div></div><div class="callout takeaway"><div class="callout-label">🔑 Key Takeaways</div><ul><li>Every recursive function needs a base case (stops recursion) and a recursive case (reduces toward it).</li><li>Each recursive call adds a frame to the call stack; a missing base case causes a stack overflow.</li><li>Recursion is not automatically faster or more memory-efficient than a loop.</li><li>Recursion often produces the clearest code for problems naturally defined in terms of themselves.</li></ul></div></div><div class="session-card" id="sess-7-1"><div class="session-head">
+        <div class="quiz-options" data-correct="1"><button class="quiz-opt" data-idx="0" onclick="handleQuizClick(this)">The sum of numbers from 1 to n</button><button class="quiz-opt" data-idx="1" onclick="handleQuizClick(this)">The factorial of n</button><button class="quiz-opt" data-idx="2" onclick="handleQuizClick(this)">The Fibonacci sequence</button><button class="quiz-opt" data-idx="3" onclick="handleQuizClick(this)">The square of n</button></div></div></div><div class="callout takeaway"><div class="callout-label">🔑 Key Takeaways</div><ul><li>Every recursive function needs a base case (stops recursion) and a recursive case (reduces toward it).</li><li>Each recursive call adds a frame to the call stack; a missing base case causes a stack overflow.</li><li>Recursion is not automatically faster or more memory-efficient than a loop.</li><li>Recursion often produces the clearest code for problems naturally defined in terms of themselves.</li></ul></div><div class="submit-block" id="submit-block-sess-7-0">
+      <div class="block-label">📤 Submit Your Case Study</div>
+      <p class="submit-hint">Write your code/answers for the assignment problems above. Sign in and get approved by the instructor to submit — your work is saved so you (and the instructor) can see your progress.</p>
+      <textarea class="submit-text" id="submit-text-sess-7-0" data-sid="sess-7-0" placeholder="Sign in to submit your work..." disabled></textarea>
+      <div class="submit-row">
+        <button class="pill submit-btn" id="submit-btn-sess-7-0" data-sid="sess-7-0" disabled>Submit</button>
+        <span class="submit-status" id="submit-status-sess-7-0"></span>
+      </div>
+    </div></div><div class="session-card" id="sess-7-1"><div class="session-head">
     <label class="done-toggle">
       <input type="checkbox" class="done-check" data-sid="sess-7-1">
       <span class="checkmark"></span>
@@ -968,7 +1157,15 @@ Area = 60</pre></div></details></div><div class="callout assign"><div class="cal
         <p class="quiz-question">2. Why does SQUARE(x) need to be defined as ((x)*(x)) instead of (x*x)?</p>
         <div class="quiz-options" data-correct="1"><button class="quiz-opt" data-idx="0" onclick="handleQuizClick(this)">Style preference only</button><button class="quiz-opt" data-idx="1" onclick="handleQuizClick(this)">To avoid incorrect expansion when x is an expression like a+b</button><button class="quiz-opt" data-idx="2" onclick="handleQuizClick(this)">It is required by the linker</button><button class="quiz-opt" data-idx="3" onclick="handleQuizClick(this)">To make it run faster at runtime</button></div></div><div class="quiz-q">
         <p class="quiz-question">3. SQUARE(2+3) using #define SQUARE(x) (x*x) (without protective parentheses) expands to:</p>
-        <div class="quiz-options" data-correct="1"><button class="quiz-opt" data-idx="0" onclick="handleQuizClick(this)">25</button><button class="quiz-opt" data-idx="1" onclick="handleQuizClick(this)">2+3*2+3, which evaluates incorrectly</button><button class="quiz-opt" data-idx="2" onclick="handleQuizClick(this)">11</button><button class="quiz-opt" data-idx="3" onclick="handleQuizClick(this)">A compile error</button></div></div></div><div class="callout takeaway"><div class="callout-label">🔑 Key Takeaways</div><ul><li>The preprocessor performs pure text substitution before the compiler sees the code.</li><li>Macro parameters must be wrapped in parentheses to avoid incorrect expansion of expressions.</li><li>Object-like macros (#define PI 3.14159) use no memory since they vanish before compilation.</li><li>Macros do not respect scope or type checking, unlike real functions or const variables.</li></ul></div></div><div class="session-card" id="sess-7-2"><div class="session-head">
+        <div class="quiz-options" data-correct="1"><button class="quiz-opt" data-idx="0" onclick="handleQuizClick(this)">25</button><button class="quiz-opt" data-idx="1" onclick="handleQuizClick(this)">2+3*2+3, which evaluates incorrectly</button><button class="quiz-opt" data-idx="2" onclick="handleQuizClick(this)">11</button><button class="quiz-opt" data-idx="3" onclick="handleQuizClick(this)">A compile error</button></div></div></div><div class="callout takeaway"><div class="callout-label">🔑 Key Takeaways</div><ul><li>The preprocessor performs pure text substitution before the compiler sees the code.</li><li>Macro parameters must be wrapped in parentheses to avoid incorrect expansion of expressions.</li><li>Object-like macros (#define PI 3.14159) use no memory since they vanish before compilation.</li><li>Macros do not respect scope or type checking, unlike real functions or const variables.</li></ul></div><div class="submit-block" id="submit-block-sess-7-1">
+      <div class="block-label">📤 Submit Your Case Study</div>
+      <p class="submit-hint">Write your code/answers for the assignment problems above. Sign in and get approved by the instructor to submit — your work is saved so you (and the instructor) can see your progress.</p>
+      <textarea class="submit-text" id="submit-text-sess-7-1" data-sid="sess-7-1" placeholder="Sign in to submit your work..." disabled></textarea>
+      <div class="submit-row">
+        <button class="pill submit-btn" id="submit-btn-sess-7-1" data-sid="sess-7-1" disabled>Submit</button>
+        <span class="submit-status" id="submit-status-sess-7-1"></span>
+      </div>
+    </div></div><div class="session-card" id="sess-7-2"><div class="session-head">
     <label class="done-toggle">
       <input type="checkbox" class="done-check" data-sid="sess-7-2">
       <span class="checkmark"></span>
@@ -1000,7 +1197,15 @@ Result = 42
         <p class="quiz-question">2. #ifndef is the logical opposite of:</p>
         <div class="quiz-options" data-correct="1"><button class="quiz-opt" data-idx="0" onclick="handleQuizClick(this)">#endif</button><button class="quiz-opt" data-idx="1" onclick="handleQuizClick(this)">#ifdef</button><button class="quiz-opt" data-idx="2" onclick="handleQuizClick(this)">#include</button><button class="quiz-opt" data-idx="3" onclick="handleQuizClick(this)">#define</button></div></div><div class="quiz-q">
         <p class="quiz-question">3. An 'include guard' at the top of a header typically uses:</p>
-        <div class="quiz-options" data-correct="1"><button class="quiz-opt" data-idx="0" onclick="handleQuizClick(this)">#if / #else / #endif only</button><button class="quiz-opt" data-idx="1" onclick="handleQuizClick(this)">#ifndef / #define / #endif</button><button class="quiz-opt" data-idx="2" onclick="handleQuizClick(this)">#ifdef / #undef only</button><button class="quiz-opt" data-idx="3" onclick="handleQuizClick(this)">No preprocessor directives at all</button></div></div></div><div class="callout takeaway"><div class="callout-label">🔑 Key Takeaways</div><ul><li>#ifdef includes code only if a macro has been defined; #ifndef is the opposite.</li><li>#ifndef/#define/#endif 'include guards' prevent a header from being included twice.</li><li>#if can test the actual value of a macro, unlike #ifdef which only checks existence.</li><li>Toggling a single #define DEBUG line is a lightweight way to switch diagnostics on/off.</li></ul></div></div></div></details>
+        <div class="quiz-options" data-correct="1"><button class="quiz-opt" data-idx="0" onclick="handleQuizClick(this)">#if / #else / #endif only</button><button class="quiz-opt" data-idx="1" onclick="handleQuizClick(this)">#ifndef / #define / #endif</button><button class="quiz-opt" data-idx="2" onclick="handleQuizClick(this)">#ifdef / #undef only</button><button class="quiz-opt" data-idx="3" onclick="handleQuizClick(this)">No preprocessor directives at all</button></div></div></div><div class="callout takeaway"><div class="callout-label">🔑 Key Takeaways</div><ul><li>#ifdef includes code only if a macro has been defined; #ifndef is the opposite.</li><li>#ifndef/#define/#endif 'include guards' prevent a header from being included twice.</li><li>#if can test the actual value of a macro, unlike #ifdef which only checks existence.</li><li>Toggling a single #define DEBUG line is a lightweight way to switch diagnostics on/off.</li></ul></div><div class="submit-block" id="submit-block-sess-7-2">
+      <div class="block-label">📤 Submit Your Case Study</div>
+      <p class="submit-hint">Write your code/answers for the assignment problems above. Sign in and get approved by the instructor to submit — your work is saved so you (and the instructor) can see your progress.</p>
+      <textarea class="submit-text" id="submit-text-sess-7-2" data-sid="sess-7-2" placeholder="Sign in to submit your work..." disabled></textarea>
+      <div class="submit-row">
+        <button class="pill submit-btn" id="submit-btn-sess-7-2" data-sid="sess-7-2" disabled>Submit</button>
+        <span class="submit-status" id="submit-status-sess-7-2"></span>
+      </div>
+    </div></div></div></details>
 <details class="experiment" >
     <summary>
       <span class="exp-num">Exp 9</span>
@@ -1036,7 +1241,15 @@ After : x = 99</pre></div></details></div><div class="callout assign"><div class
         <p class="quiz-question">2. What does the * operator do when applied to a pointer?</p>
         <div class="quiz-options" data-correct="1"><button class="quiz-opt" data-idx="0" onclick="handleQuizClick(this)">Gets the address</button><button class="quiz-opt" data-idx="1" onclick="handleQuizClick(this)">Dereferences the pointer to access its value</button><button class="quiz-opt" data-idx="2" onclick="handleQuizClick(this)">Doubles the pointer's value</button><button class="quiz-opt" data-idx="3" onclick="handleQuizClick(this)">Declares a constant</button></div></div><div class="quiz-q">
         <p class="quiz-question">3. int *p = &amp;x; means p stores:</p>
-        <div class="quiz-options" data-correct="1"><button class="quiz-opt" data-idx="0" onclick="handleQuizClick(this)">The value of x</button><button class="quiz-opt" data-idx="1" onclick="handleQuizClick(this)">The address of x</button><button class="quiz-opt" data-idx="2" onclick="handleQuizClick(this)">A copy of x's type only</button><button class="quiz-opt" data-idx="3" onclick="handleQuizClick(this)">Nothing until *p is used</button></div></div></div><div class="callout takeaway"><div class="callout-label">🔑 Key Takeaways</div><ul><li>A pointer stores a memory address; &amp; gets an address, * dereferences it.</li><li>The pointer's declared type must match the type of data it points to.</li><li>Dereferencing an uninitialized or dangling pointer is undefined behaviour and must be avoided.</li><li>Modifying *p also modifies the original variable it points to.</li></ul></div></div><div class="session-card" id="sess-8-1"><div class="session-head">
+        <div class="quiz-options" data-correct="1"><button class="quiz-opt" data-idx="0" onclick="handleQuizClick(this)">The value of x</button><button class="quiz-opt" data-idx="1" onclick="handleQuizClick(this)">The address of x</button><button class="quiz-opt" data-idx="2" onclick="handleQuizClick(this)">A copy of x's type only</button><button class="quiz-opt" data-idx="3" onclick="handleQuizClick(this)">Nothing until *p is used</button></div></div></div><div class="callout takeaway"><div class="callout-label">🔑 Key Takeaways</div><ul><li>A pointer stores a memory address; &amp; gets an address, * dereferences it.</li><li>The pointer's declared type must match the type of data it points to.</li><li>Dereferencing an uninitialized or dangling pointer is undefined behaviour and must be avoided.</li><li>Modifying *p also modifies the original variable it points to.</li></ul></div><div class="submit-block" id="submit-block-sess-8-0">
+      <div class="block-label">📤 Submit Your Case Study</div>
+      <p class="submit-hint">Write your code/answers for the assignment problems above. Sign in and get approved by the instructor to submit — your work is saved so you (and the instructor) can see your progress.</p>
+      <textarea class="submit-text" id="submit-text-sess-8-0" data-sid="sess-8-0" placeholder="Sign in to submit your work..." disabled></textarea>
+      <div class="submit-row">
+        <button class="pill submit-btn" id="submit-btn-sess-8-0" data-sid="sess-8-0" disabled>Submit</button>
+        <span class="submit-status" id="submit-status-sess-8-0"></span>
+      </div>
+    </div></div><div class="session-card" id="sess-8-1"><div class="session-head">
     <label class="done-toggle">
       <input type="checkbox" class="done-check" data-sid="sess-8-1">
       <span class="checkmark"></span>
@@ -1067,7 +1280,15 @@ int main(){
         <p class="quiz-question">2. To let a function modify a caller's variable, you must pass:</p>
         <div class="quiz-options" data-correct="1"><button class="quiz-opt" data-idx="0" onclick="handleQuizClick(this)">The variable directly by value</button><button class="quiz-opt" data-idx="1" onclick="handleQuizClick(this)">A pointer to the variable</button><button class="quiz-opt" data-idx="2" onclick="handleQuizClick(this)">Nothing; it's impossible in C</button><button class="quiz-opt" data-idx="3" onclick="handleQuizClick(this)">A copy of the variable twice</button></div></div><div class="quiz-q">
         <p class="quiz-question">3. When an array is passed to a function, it decays into:</p>
-        <div class="quiz-options" data-correct="1"><button class="quiz-opt" data-idx="0" onclick="handleQuizClick(this)">A copy of the whole array</button><button class="quiz-opt" data-idx="1" onclick="handleQuizClick(this)">A pointer to its first element</button><button class="quiz-opt" data-idx="2" onclick="handleQuizClick(this)">A struct</button><button class="quiz-opt" data-idx="3" onclick="handleQuizClick(this)">A union</button></div></div></div><div class="callout takeaway"><div class="callout-label">🔑 Key Takeaways</div><ul><li>C passes arguments by value; pointers are the only way for a function to modify a caller's variable.</li><li>An array name decays into a pointer to its first element when passed to a function.</li><li>arr[i] and *(arr + i) are interchangeable ways to access array elements via pointers.</li><li>A function receiving an array must also receive its size separately, since size information is not retained.</li></ul></div></div><div class="session-card" id="sess-8-2"><div class="session-head">
+        <div class="quiz-options" data-correct="1"><button class="quiz-opt" data-idx="0" onclick="handleQuizClick(this)">A copy of the whole array</button><button class="quiz-opt" data-idx="1" onclick="handleQuizClick(this)">A pointer to its first element</button><button class="quiz-opt" data-idx="2" onclick="handleQuizClick(this)">A struct</button><button class="quiz-opt" data-idx="3" onclick="handleQuizClick(this)">A union</button></div></div></div><div class="callout takeaway"><div class="callout-label">🔑 Key Takeaways</div><ul><li>C passes arguments by value; pointers are the only way for a function to modify a caller's variable.</li><li>An array name decays into a pointer to its first element when passed to a function.</li><li>arr[i] and *(arr + i) are interchangeable ways to access array elements via pointers.</li><li>A function receiving an array must also receive its size separately, since size information is not retained.</li></ul></div><div class="submit-block" id="submit-block-sess-8-1">
+      <div class="block-label">📤 Submit Your Case Study</div>
+      <p class="submit-hint">Write your code/answers for the assignment problems above. Sign in and get approved by the instructor to submit — your work is saved so you (and the instructor) can see your progress.</p>
+      <textarea class="submit-text" id="submit-text-sess-8-1" data-sid="sess-8-1" placeholder="Sign in to submit your work..." disabled></textarea>
+      <div class="submit-row">
+        <button class="pill submit-btn" id="submit-btn-sess-8-1" data-sid="sess-8-1" disabled>Submit</button>
+        <span class="submit-status" id="submit-status-sess-8-1"></span>
+      </div>
+    </div></div><div class="session-card" id="sess-8-2"><div class="session-head">
     <label class="done-toggle">
       <input type="checkbox" class="done-check" data-sid="sess-8-2">
       <span class="checkmark"></span>
@@ -1097,7 +1318,15 @@ int main(){
         <p class="quiz-question">2. For a char pointer p, p + 1 moves ahead by:</p>
         <div class="quiz-options" data-correct="1"><button class="quiz-opt" data-idx="0" onclick="handleQuizClick(this)">4 bytes</button><button class="quiz-opt" data-idx="1" onclick="handleQuizClick(this)">1 byte</button><button class="quiz-opt" data-idx="2" onclick="handleQuizClick(this)">8 bytes</button><button class="quiz-opt" data-idx="3" onclick="handleQuizClick(this)">Depends on the string's length</button></div></div><div class="quiz-q">
         <p class="quiz-question">3. A C string is terminated by:</p>
-        <div class="quiz-options" data-correct="1"><button class="quiz-opt" data-idx="0" onclick="handleQuizClick(this)">A newline character</button><button class="quiz-opt" data-idx="1" onclick="handleQuizClick(this)">The null character '\0'</button><button class="quiz-opt" data-idx="2" onclick="handleQuizClick(this)">The EOF marker</button><button class="quiz-opt" data-idx="3" onclick="handleQuizClick(this)">A space character</button></div></div></div><div class="callout takeaway"><div class="callout-label">🔑 Key Takeaways</div><ul><li>Pointer arithmetic is automatically scaled by the size of the type the pointer points to.</li><li>A C string is a char array ending in a null character '\0'.</li><li>String functions work by walking forward through memory until the null terminator is found.</li><li>Forgetting to leave room for, or overwriting, the null terminator is a classic source of bugs.</li></ul></div></div></div></details>
+        <div class="quiz-options" data-correct="1"><button class="quiz-opt" data-idx="0" onclick="handleQuizClick(this)">A newline character</button><button class="quiz-opt" data-idx="1" onclick="handleQuizClick(this)">The null character '\0'</button><button class="quiz-opt" data-idx="2" onclick="handleQuizClick(this)">The EOF marker</button><button class="quiz-opt" data-idx="3" onclick="handleQuizClick(this)">A space character</button></div></div></div><div class="callout takeaway"><div class="callout-label">🔑 Key Takeaways</div><ul><li>Pointer arithmetic is automatically scaled by the size of the type the pointer points to.</li><li>A C string is a char array ending in a null character '\0'.</li><li>String functions work by walking forward through memory until the null terminator is found.</li><li>Forgetting to leave room for, or overwriting, the null terminator is a classic source of bugs.</li></ul></div><div class="submit-block" id="submit-block-sess-8-2">
+      <div class="block-label">📤 Submit Your Case Study</div>
+      <p class="submit-hint">Write your code/answers for the assignment problems above. Sign in and get approved by the instructor to submit — your work is saved so you (and the instructor) can see your progress.</p>
+      <textarea class="submit-text" id="submit-text-sess-8-2" data-sid="sess-8-2" placeholder="Sign in to submit your work..." disabled></textarea>
+      <div class="submit-row">
+        <button class="pill submit-btn" id="submit-btn-sess-8-2" data-sid="sess-8-2" disabled>Submit</button>
+        <span class="submit-status" id="submit-status-sess-8-2"></span>
+      </div>
+    </div></div></div></details>
 <details class="experiment" >
     <summary>
       <span class="exp-num">Exp 10</span>
@@ -1133,7 +1362,15 @@ int main(){
         <p class="quiz-question">2. Dereferencing pp once (*pp) gives:</p>
         <div class="quiz-options" data-correct="1"><button class="quiz-opt" data-idx="0" onclick="handleQuizClick(this)">The final char value</button><button class="quiz-opt" data-idx="1" onclick="handleQuizClick(this)">The inner pointer it points to</button><button class="quiz-opt" data-idx="2" onclick="handleQuizClick(this)">A compile error</button><button class="quiz-opt" data-idx="3" onclick="handleQuizClick(this)">Always NULL</button></div></div><div class="quiz-q">
         <p class="quiz-question">3. char *s[] = {"C","Lab","PPS"}; declares:</p>
-        <div class="quiz-options" data-correct="1"><button class="quiz-opt" data-idx="0" onclick="handleQuizClick(this)">A single string</button><button class="quiz-opt" data-idx="1" onclick="handleQuizClick(this)">An array of pointers, each pointing to a string literal</button><button class="quiz-opt" data-idx="2" onclick="handleQuizClick(this)">A 2D char array copying all characters</button><button class="quiz-opt" data-idx="3" onclick="handleQuizClick(this)">A union</button></div></div></div><div class="callout takeaway"><div class="callout-label">🔑 Key Takeaways</div><ul><li>A pointer to a pointer (char **pp) stores the address of another pointer.</li><li>An array of strings (char *s[]) is really an array of pointers, each pointing to a string's first character.</li><li>argv in main(int argc, char *argv[]) is itself an array of pointers to argument strings.</li><li>Extra indirection allows flexible storage and access patterns for collections of pointers.</li></ul></div></div><div class="session-card" id="sess-9-1"><div class="session-head">
+        <div class="quiz-options" data-correct="1"><button class="quiz-opt" data-idx="0" onclick="handleQuizClick(this)">A single string</button><button class="quiz-opt" data-idx="1" onclick="handleQuizClick(this)">An array of pointers, each pointing to a string literal</button><button class="quiz-opt" data-idx="2" onclick="handleQuizClick(this)">A 2D char array copying all characters</button><button class="quiz-opt" data-idx="3" onclick="handleQuizClick(this)">A union</button></div></div></div><div class="callout takeaway"><div class="callout-label">🔑 Key Takeaways</div><ul><li>A pointer to a pointer (char **pp) stores the address of another pointer.</li><li>An array of strings (char *s[]) is really an array of pointers, each pointing to a string's first character.</li><li>argv in main(int argc, char *argv[]) is itself an array of pointers to argument strings.</li><li>Extra indirection allows flexible storage and access patterns for collections of pointers.</li></ul></div><div class="submit-block" id="submit-block-sess-9-0">
+      <div class="block-label">📤 Submit Your Case Study</div>
+      <p class="submit-hint">Write your code/answers for the assignment problems above. Sign in and get approved by the instructor to submit — your work is saved so you (and the instructor) can see your progress.</p>
+      <textarea class="submit-text" id="submit-text-sess-9-0" data-sid="sess-9-0" placeholder="Sign in to submit your work..." disabled></textarea>
+      <div class="submit-row">
+        <button class="pill submit-btn" id="submit-btn-sess-9-0" data-sid="sess-9-0" disabled>Submit</button>
+        <span class="submit-status" id="submit-status-sess-9-0"></span>
+      </div>
+    </div></div><div class="session-card" id="sess-9-1"><div class="session-head">
     <label class="done-toggle">
       <input type="checkbox" class="done-check" data-sid="sess-9-1">
       <span class="checkmark"></span>
@@ -1167,7 +1404,15 @@ int main(){
         <p class="quiz-question">2. The address formula for a[i][j] uses:</p>
         <div class="quiz-options" data-correct="1"><button class="quiz-opt" data-idx="0" onclick="handleQuizClick(this)">Only i</button><button class="quiz-opt" data-idx="1" onclick="handleQuizClick(this)">i * numColumns + j (scaled by element size)</button><button class="quiz-opt" data-idx="2" onclick="handleQuizClick(this)">Only j</button><button class="quiz-opt" data-idx="3" onclick="handleQuizClick(this)">The array's total size divided by 2</button></div></div><div class="quiz-q">
         <p class="quiz-question">3. A function parameter for a 2D array, int f(int a[][3]), requires specifying:</p>
-        <div class="quiz-options" data-correct="1"><button class="quiz-opt" data-idx="0" onclick="handleQuizClick(this)">The number of rows</button><button class="quiz-opt" data-idx="1" onclick="handleQuizClick(this)">The number of columns</button><button class="quiz-opt" data-idx="2" onclick="handleQuizClick(this)">Both rows and columns always</button><button class="quiz-opt" data-idx="3" onclick="handleQuizClick(this)">Neither; C infers both</button></div></div></div><div class="callout takeaway"><div class="callout-label">🔑 Key Takeaways</div><ul><li>2D arrays are stored in row-major order — all of row 0, then all of row 1, and so on.</li><li>The address of a[i][j] is base + (i * numColumns + j) * sizeof(type).</li><li>A function receiving a 2D array parameter must specify the number of columns.</li><li>Nested loops (rows outer, columns inner) are the standard pattern for visiting every matrix element.</li></ul></div></div><div class="session-card" id="sess-9-2"><div class="session-head">
+        <div class="quiz-options" data-correct="1"><button class="quiz-opt" data-idx="0" onclick="handleQuizClick(this)">The number of rows</button><button class="quiz-opt" data-idx="1" onclick="handleQuizClick(this)">The number of columns</button><button class="quiz-opt" data-idx="2" onclick="handleQuizClick(this)">Both rows and columns always</button><button class="quiz-opt" data-idx="3" onclick="handleQuizClick(this)">Neither; C infers both</button></div></div></div><div class="callout takeaway"><div class="callout-label">🔑 Key Takeaways</div><ul><li>2D arrays are stored in row-major order — all of row 0, then all of row 1, and so on.</li><li>The address of a[i][j] is base + (i * numColumns + j) * sizeof(type).</li><li>A function receiving a 2D array parameter must specify the number of columns.</li><li>Nested loops (rows outer, columns inner) are the standard pattern for visiting every matrix element.</li></ul></div><div class="submit-block" id="submit-block-sess-9-1">
+      <div class="block-label">📤 Submit Your Case Study</div>
+      <p class="submit-hint">Write your code/answers for the assignment problems above. Sign in and get approved by the instructor to submit — your work is saved so you (and the instructor) can see your progress.</p>
+      <textarea class="submit-text" id="submit-text-sess-9-1" data-sid="sess-9-1" placeholder="Sign in to submit your work..." disabled></textarea>
+      <div class="submit-row">
+        <button class="pill submit-btn" id="submit-btn-sess-9-1" data-sid="sess-9-1" disabled>Submit</button>
+        <span class="submit-status" id="submit-status-sess-9-1"></span>
+      </div>
+    </div></div><div class="session-card" id="sess-9-2"><div class="session-head">
     <label class="done-toggle">
       <input type="checkbox" class="done-check" data-sid="sess-9-2">
       <span class="checkmark"></span>
@@ -1200,7 +1445,15 @@ mul(8, 3) = 24</pre></div></details></div><div class="callout assign"><div class
         <p class="quiz-question">2. argv[0] typically holds:</p>
         <div class="quiz-options" data-correct="1"><button class="quiz-opt" data-idx="0" onclick="handleQuizClick(this)">The first user-supplied argument</button><button class="quiz-opt" data-idx="1" onclick="handleQuizClick(this)">The program's own name</button><button class="quiz-opt" data-idx="2" onclick="handleQuizClick(this)">Always NULL</button><button class="quiz-opt" data-idx="3" onclick="handleQuizClick(this)">The total argument count</button></div></div><div class="quiz-q">
         <p class="quiz-question">3. argc counts:</p>
-        <div class="quiz-options" data-correct="1"><button class="quiz-opt" data-idx="0" onclick="handleQuizClick(this)">Only user-supplied arguments, excluding the program name</button><button class="quiz-opt" data-idx="1" onclick="handleQuizClick(this)">All arguments including the program's own name</button><button class="quiz-opt" data-idx="2" onclick="handleQuizClick(this)">Always exactly 1</button><button class="quiz-opt" data-idx="3" onclick="handleQuizClick(this)">The number of functions in the program</button></div></div></div><div class="callout takeaway"><div class="callout-label">🔑 Key Takeaways</div><ul><li>A true 2D array is one contiguous memory block; an array of row pointers is more flexible but not guaranteed contiguous.</li><li>argc counts command-line arguments (including the program name); argv holds the actual argument strings.</li><li>A function pointer stores the address of a function, letting a program choose behaviour at runtime.</li><li>Function pointers are the mechanism behind callback-style and table-driven designs.</li></ul></div></div></div></details>
+        <div class="quiz-options" data-correct="1"><button class="quiz-opt" data-idx="0" onclick="handleQuizClick(this)">Only user-supplied arguments, excluding the program name</button><button class="quiz-opt" data-idx="1" onclick="handleQuizClick(this)">All arguments including the program's own name</button><button class="quiz-opt" data-idx="2" onclick="handleQuizClick(this)">Always exactly 1</button><button class="quiz-opt" data-idx="3" onclick="handleQuizClick(this)">The number of functions in the program</button></div></div></div><div class="callout takeaway"><div class="callout-label">🔑 Key Takeaways</div><ul><li>A true 2D array is one contiguous memory block; an array of row pointers is more flexible but not guaranteed contiguous.</li><li>argc counts command-line arguments (including the program name); argv holds the actual argument strings.</li><li>A function pointer stores the address of a function, letting a program choose behaviour at runtime.</li><li>Function pointers are the mechanism behind callback-style and table-driven designs.</li></ul></div><div class="submit-block" id="submit-block-sess-9-2">
+      <div class="block-label">📤 Submit Your Case Study</div>
+      <p class="submit-hint">Write your code/answers for the assignment problems above. Sign in and get approved by the instructor to submit — your work is saved so you (and the instructor) can see your progress.</p>
+      <textarea class="submit-text" id="submit-text-sess-9-2" data-sid="sess-9-2" placeholder="Sign in to submit your work..." disabled></textarea>
+      <div class="submit-row">
+        <button class="pill submit-btn" id="submit-btn-sess-9-2" data-sid="sess-9-2" disabled>Submit</button>
+        <span class="submit-status" id="submit-status-sess-9-2"></span>
+      </div>
+    </div></div></div></details>
 <details class="experiment" >
     <summary>
       <span class="exp-num">Exp 11</span>
@@ -1237,7 +1490,15 @@ Employee: 101 Priya Rs.55000.00</pre></div></details></div><div class="callout a
         <p class="quiz-question">2. Structure members are accessed using:</p>
         <div class="quiz-options" data-correct="1"><button class="quiz-opt" data-idx="0" onclick="handleQuizClick(this)">The arrow operator only</button><button class="quiz-opt" data-idx="1" onclick="handleQuizClick(this)">The dot operator</button><button class="quiz-opt" data-idx="2" onclick="handleQuizClick(this)">Square brackets only</button><button class="quiz-opt" data-idx="3" onclick="handleQuizClick(this)">The &amp; operator</button></div></div><div class="quiz-q">
         <p class="quiz-question">3. struct Student s2 = s1; (same struct type) performs:</p>
-        <div class="quiz-options" data-correct="1"><button class="quiz-opt" data-idx="0" onclick="handleQuizClick(this)">A shallow reference only</button><button class="quiz-opt" data-idx="1" onclick="handleQuizClick(this)">A full copy of every member from s1 into s2</button><button class="quiz-opt" data-idx="2" onclick="handleQuizClick(this)">A compile error</button><button class="quiz-opt" data-idx="3" onclick="handleQuizClick(this)">Nothing; structs cannot be assigned</button></div></div></div><div class="callout takeaway"><div class="callout-label">🔑 Key Takeaways</div><ul><li>A struct groups several related members of possibly different types under one name.</li><li>Members are accessed with the dot operator (s.member).</li><li>A structure variable can be copied entirely to another with a simple assignment.</li><li>Structures are clearer than parallel arrays once a record has more than a few related fields.</li></ul></div></div><div class="session-card" id="sess-10-1"><div class="session-head">
+        <div class="quiz-options" data-correct="1"><button class="quiz-opt" data-idx="0" onclick="handleQuizClick(this)">A shallow reference only</button><button class="quiz-opt" data-idx="1" onclick="handleQuizClick(this)">A full copy of every member from s1 into s2</button><button class="quiz-opt" data-idx="2" onclick="handleQuizClick(this)">A compile error</button><button class="quiz-opt" data-idx="3" onclick="handleQuizClick(this)">Nothing; structs cannot be assigned</button></div></div></div><div class="callout takeaway"><div class="callout-label">🔑 Key Takeaways</div><ul><li>A struct groups several related members of possibly different types under one name.</li><li>Members are accessed with the dot operator (s.member).</li><li>A structure variable can be copied entirely to another with a simple assignment.</li><li>Structures are clearer than parallel arrays once a record has more than a few related fields.</li></ul></div><div class="submit-block" id="submit-block-sess-10-0">
+      <div class="block-label">📤 Submit Your Case Study</div>
+      <p class="submit-hint">Write your code/answers for the assignment problems above. Sign in and get approved by the instructor to submit — your work is saved so you (and the instructor) can see your progress.</p>
+      <textarea class="submit-text" id="submit-text-sess-10-0" data-sid="sess-10-0" placeholder="Sign in to submit your work..." disabled></textarea>
+      <div class="submit-row">
+        <button class="pill submit-btn" id="submit-btn-sess-10-0" data-sid="sess-10-0" disabled>Submit</button>
+        <span class="submit-status" id="submit-status-sess-10-0"></span>
+      </div>
+    </div></div><div class="session-card" id="sess-10-1"><div class="session-head">
     <label class="done-toggle">
       <input type="checkbox" class="done-check" data-sid="sess-10-1">
       <span class="checkmark"></span>
@@ -1270,7 +1531,15 @@ int main(){
         <p class="quiz-question">2. Changes made to a struct parameter passed by value:</p>
         <div class="quiz-options" data-correct="1"><button class="quiz-opt" data-idx="0" onclick="handleQuizClick(this)">Affect the caller's original structure</button><button class="quiz-opt" data-idx="1" onclick="handleQuizClick(this)">Do NOT affect the caller's original structure</button><button class="quiz-opt" data-idx="2" onclick="handleQuizClick(this)">Cause a compile error</button><button class="quiz-opt" data-idx="3" onclick="handleQuizClick(this)">Only affect the first member</button></div></div><div class="quiz-q">
         <p class="quiz-question">3. struct Student list[50]; declares:</p>
-        <div class="quiz-options" data-correct="1"><button class="quiz-opt" data-idx="0" onclick="handleQuizClick(this)">A single student record</button><button class="quiz-opt" data-idx="1" onclick="handleQuizClick(this)">An array capable of holding 50 student records</button><button class="quiz-opt" data-idx="2" onclick="handleQuizClick(this)">A pointer to one student</button><button class="quiz-opt" data-idx="3" onclick="handleQuizClick(this)">A union of students</button></div></div></div><div class="callout takeaway"><div class="callout-label">🔑 Key Takeaways</div><ul><li>Passing a structure by value gives the function a full copy; changes inside do not affect the caller's original.</li><li>An array of structures (struct Student list[50]) represents a table of records naturally.</li><li>list[i] gives a complete record; list[i].field gives one field of that record.</li><li>For large structures, or to allow in-place modification, pass a pointer instead of the whole structure.</li></ul></div></div><div class="session-card" id="sess-10-2"><div class="session-head">
+        <div class="quiz-options" data-correct="1"><button class="quiz-opt" data-idx="0" onclick="handleQuizClick(this)">A single student record</button><button class="quiz-opt" data-idx="1" onclick="handleQuizClick(this)">An array capable of holding 50 student records</button><button class="quiz-opt" data-idx="2" onclick="handleQuizClick(this)">A pointer to one student</button><button class="quiz-opt" data-idx="3" onclick="handleQuizClick(this)">A union of students</button></div></div></div><div class="callout takeaway"><div class="callout-label">🔑 Key Takeaways</div><ul><li>Passing a structure by value gives the function a full copy; changes inside do not affect the caller's original.</li><li>An array of structures (struct Student list[50]) represents a table of records naturally.</li><li>list[i] gives a complete record; list[i].field gives one field of that record.</li><li>For large structures, or to allow in-place modification, pass a pointer instead of the whole structure.</li></ul></div><div class="submit-block" id="submit-block-sess-10-1">
+      <div class="block-label">📤 Submit Your Case Study</div>
+      <p class="submit-hint">Write your code/answers for the assignment problems above. Sign in and get approved by the instructor to submit — your work is saved so you (and the instructor) can see your progress.</p>
+      <textarea class="submit-text" id="submit-text-sess-10-1" data-sid="sess-10-1" placeholder="Sign in to submit your work..." disabled></textarea>
+      <div class="submit-row">
+        <button class="pill submit-btn" id="submit-btn-sess-10-1" data-sid="sess-10-1" disabled>Submit</button>
+        <span class="submit-status" id="submit-status-sess-10-1"></span>
+      </div>
+    </div></div><div class="session-card" id="sess-10-2"><div class="session-head">
     <label class="done-toggle">
       <input type="checkbox" class="done-check" data-sid="sess-10-2">
       <span class="checkmark"></span>
@@ -1300,7 +1569,15 @@ After : 65.00</pre></div></details></div><div class="callout assign"><div class=
         <p class="quiz-question">2. The arrow operator (-&gt;) exists as shorthand for:</p>
         <div class="quiz-options" data-correct="1"><button class="quiz-opt" data-idx="0" onclick="handleQuizClick(this)">Dereferencing only</button><button class="quiz-opt" data-idx="1" onclick="handleQuizClick(this)">Dereferencing a pointer and then accessing a member, combined</button><button class="quiz-opt" data-idx="2" onclick="handleQuizClick(this)">Declaring a new structure</button><button class="quiz-opt" data-idx="3" onclick="handleQuizClick(this)">Comparing two structures</button></div></div><div class="quiz-q">
         <p class="quiz-question">3. Passing a struct pointer instead of the struct itself to a function:</p>
-        <div class="quiz-options" data-correct="1"><button class="quiz-opt" data-idx="0" onclick="handleQuizClick(this)">Always copies the entire structure anyway</button><button class="quiz-opt" data-idx="1" onclick="handleQuizClick(this)">Avoids copying and lets the function modify the original</button><button class="quiz-opt" data-idx="2" onclick="handleQuizClick(this)">Is illegal in C</button><button class="quiz-opt" data-idx="3" onclick="handleQuizClick(this)">Only works for unions</button></div></div></div><div class="callout takeaway"><div class="callout-label">🔑 Key Takeaways</div><ul><li>A pointer to a structure allows member access through the arrow operator (p-&gt;member).</li><li>p-&gt;member is exactly equivalent to (*p).member.</li><li>Passing a structure pointer avoids copying and lets a function modify the original data.</li><li>This pointer-to-structure pattern is the foundation for linked lists and trees studied later.</li></ul></div></div></div></details>
+        <div class="quiz-options" data-correct="1"><button class="quiz-opt" data-idx="0" onclick="handleQuizClick(this)">Always copies the entire structure anyway</button><button class="quiz-opt" data-idx="1" onclick="handleQuizClick(this)">Avoids copying and lets the function modify the original</button><button class="quiz-opt" data-idx="2" onclick="handleQuizClick(this)">Is illegal in C</button><button class="quiz-opt" data-idx="3" onclick="handleQuizClick(this)">Only works for unions</button></div></div></div><div class="callout takeaway"><div class="callout-label">🔑 Key Takeaways</div><ul><li>A pointer to a structure allows member access through the arrow operator (p-&gt;member).</li><li>p-&gt;member is exactly equivalent to (*p).member.</li><li>Passing a structure pointer avoids copying and lets a function modify the original data.</li><li>This pointer-to-structure pattern is the foundation for linked lists and trees studied later.</li></ul></div><div class="submit-block" id="submit-block-sess-10-2">
+      <div class="block-label">📤 Submit Your Case Study</div>
+      <p class="submit-hint">Write your code/answers for the assignment problems above. Sign in and get approved by the instructor to submit — your work is saved so you (and the instructor) can see your progress.</p>
+      <textarea class="submit-text" id="submit-text-sess-10-2" data-sid="sess-10-2" placeholder="Sign in to submit your work..." disabled></textarea>
+      <div class="submit-row">
+        <button class="pill submit-btn" id="submit-btn-sess-10-2" data-sid="sess-10-2" disabled>Submit</button>
+        <span class="submit-status" id="submit-status-sess-10-2"></span>
+      </div>
+    </div></div></div></details>
 <details class="experiment" >
     <summary>
       <span class="exp-num">Exp 12</span>
@@ -1336,7 +1613,15 @@ int main(){
         <p class="quiz-question">2. Table lookups work best when:</p>
         <div class="quiz-options" data-correct="0"><button class="quiz-opt" data-idx="0" onclick="handleQuizClick(this)">The input can be mapped to a small, predictable index</button><button class="quiz-opt" data-idx="1" onclick="handleQuizClick(this)">The input is completely random text</button><button class="quiz-opt" data-idx="2" onclick="handleQuizClick(this)">There is only one possible input</button><button class="quiz-opt" data-idx="3" onclick="handleQuizClick(this)">The mapping changes every time the program runs</button></div></div><div class="quiz-q">
         <p class="quiz-question">3. A month-name lookup table typically uses:</p>
-        <div class="quiz-options" data-correct="1"><button class="quiz-opt" data-idx="0" onclick="handleQuizClick(this)">A single if statement</button><button class="quiz-opt" data-idx="1" onclick="handleQuizClick(this)">An array of strings indexed by month number</button><button class="quiz-opt" data-idx="2" onclick="handleQuizClick(this)">Recursion only</button><button class="quiz-opt" data-idx="3" onclick="handleQuizClick(this)">A union</button></div></div></div><div class="callout takeaway"><div class="callout-label">🔑 Key Takeaways</div><ul><li>A lookup table stores pre-computed answers to a fixed mapping in an array for instant retrieval.</li><li>Table lookups replace long if-else/else-if ladders with a single indexed access.</li><li>This technique works best when the input can be mapped to a small, predictable array index.</li><li>The trade-off is memory (to store the table) for speed and readability.</li></ul></div></div><div class="session-card" id="sess-11-1"><div class="session-head">
+        <div class="quiz-options" data-correct="1"><button class="quiz-opt" data-idx="0" onclick="handleQuizClick(this)">A single if statement</button><button class="quiz-opt" data-idx="1" onclick="handleQuizClick(this)">An array of strings indexed by month number</button><button class="quiz-opt" data-idx="2" onclick="handleQuizClick(this)">Recursion only</button><button class="quiz-opt" data-idx="3" onclick="handleQuizClick(this)">A union</button></div></div></div><div class="callout takeaway"><div class="callout-label">🔑 Key Takeaways</div><ul><li>A lookup table stores pre-computed answers to a fixed mapping in an array for instant retrieval.</li><li>Table lookups replace long if-else/else-if ladders with a single indexed access.</li><li>This technique works best when the input can be mapped to a small, predictable array index.</li><li>The trade-off is memory (to store the table) for speed and readability.</li></ul></div><div class="submit-block" id="submit-block-sess-11-0">
+      <div class="block-label">📤 Submit Your Case Study</div>
+      <p class="submit-hint">Write your code/answers for the assignment problems above. Sign in and get approved by the instructor to submit — your work is saved so you (and the instructor) can see your progress.</p>
+      <textarea class="submit-text" id="submit-text-sess-11-0" data-sid="sess-11-0" placeholder="Sign in to submit your work..." disabled></textarea>
+      <div class="submit-row">
+        <button class="pill submit-btn" id="submit-btn-sess-11-0" data-sid="sess-11-0" disabled>Submit</button>
+        <span class="submit-status" id="submit-status-sess-11-0"></span>
+      </div>
+    </div></div><div class="session-card" id="sess-11-1"><div class="session-head">
     <label class="done-toggle">
       <input type="checkbox" class="done-check" data-sid="sess-11-1">
       <span class="checkmark"></span>
@@ -1364,7 +1649,15 @@ sizeof(DataUnion)  = 4 bytes</pre></div></details></div><div class="callout assi
         <p class="quiz-question">2. A union's total size equals:</p>
         <div class="quiz-options" data-correct="1"><button class="quiz-opt" data-idx="0" onclick="handleQuizClick(this)">The sum of all its members' sizes</button><button class="quiz-opt" data-idx="1" onclick="handleQuizClick(this)">The size of its largest member</button><button class="quiz-opt" data-idx="2" onclick="handleQuizClick(this)">Always 4 bytes</button><button class="quiz-opt" data-idx="3" onclick="handleQuizClick(this)">The size of its smallest member</button></div></div><div class="quiz-q">
         <p class="quiz-question">3. In a union, writing to one member and then reading a different member:</p>
-        <div class="quiz-options" data-correct="1"><button class="quiz-opt" data-idx="0" onclick="handleQuizClick(this)">Always works correctly</button><button class="quiz-opt" data-idx="1" onclick="handleQuizClick(this)">Gives a meaningless/incorrect result, since members share memory</button><button class="quiz-opt" data-idx="2" onclick="handleQuizClick(this)">Causes a compile error</button><button class="quiz-opt" data-idx="3" onclick="handleQuizClick(this)">Automatically converts the value correctly</button></div></div></div><div class="callout takeaway"><div class="callout-label">🔑 Key Takeaways</div><ul><li>typedef creates a shorter alias for a type, purely for readability with no effect on memory layout.</li><li>A union's members all share the same memory; its size equals its largest member's size.</li><li>Only one union member holds a meaningful value at any given time.</li><li>Unions save memory for 'one value, multiple possible types' scenarios, at the cost of needing to track the active member.</li></ul></div></div><div class="session-card" id="sess-11-2"><div class="session-head">
+        <div class="quiz-options" data-correct="1"><button class="quiz-opt" data-idx="0" onclick="handleQuizClick(this)">Always works correctly</button><button class="quiz-opt" data-idx="1" onclick="handleQuizClick(this)">Gives a meaningless/incorrect result, since members share memory</button><button class="quiz-opt" data-idx="2" onclick="handleQuizClick(this)">Causes a compile error</button><button class="quiz-opt" data-idx="3" onclick="handleQuizClick(this)">Automatically converts the value correctly</button></div></div></div><div class="callout takeaway"><div class="callout-label">🔑 Key Takeaways</div><ul><li>typedef creates a shorter alias for a type, purely for readability with no effect on memory layout.</li><li>A union's members all share the same memory; its size equals its largest member's size.</li><li>Only one union member holds a meaningful value at any given time.</li><li>Unions save memory for 'one value, multiple possible types' scenarios, at the cost of needing to track the active member.</li></ul></div><div class="submit-block" id="submit-block-sess-11-1">
+      <div class="block-label">📤 Submit Your Case Study</div>
+      <p class="submit-hint">Write your code/answers for the assignment problems above. Sign in and get approved by the instructor to submit — your work is saved so you (and the instructor) can see your progress.</p>
+      <textarea class="submit-text" id="submit-text-sess-11-1" data-sid="sess-11-1" placeholder="Sign in to submit your work..." disabled></textarea>
+      <div class="submit-row">
+        <button class="pill submit-btn" id="submit-btn-sess-11-1" data-sid="sess-11-1" disabled>Submit</button>
+        <span class="submit-status" id="submit-status-sess-11-1"></span>
+      </div>
+    </div></div><div class="session-card" id="sess-11-2"><div class="session-head">
     <label class="done-toggle">
       <input type="checkbox" class="done-check" data-sid="sess-11-2">
       <span class="checkmark"></span>
@@ -1396,7 +1689,15 @@ Size of Permissions = 4 byte(s)</pre></div></details></div><div class="callout a
         <p class="quiz-question">2. Bit-fields are most commonly used for:</p>
         <div class="quiz-options" data-correct="1"><button class="quiz-opt" data-idx="0" onclick="handleQuizClick(this)">Storing large floating-point numbers</button><button class="quiz-opt" data-idx="1" onclick="handleQuizClick(this)">Packing many small flags/permissions tightly</button><button class="quiz-opt" data-idx="2" onclick="handleQuizClick(this)">Replacing all arrays</button><button class="quiz-opt" data-idx="3" onclick="handleQuizClick(this)">Storing strings</button></div></div><div class="quiz-q">
         <p class="quiz-question">3. Does the C standard guarantee identical bit-field layout across all compilers?</p>
-        <div class="quiz-options" data-correct="1"><button class="quiz-opt" data-idx="0" onclick="handleQuizClick(this)">Yes, always</button><button class="quiz-opt" data-idx="1" onclick="handleQuizClick(this)">No, layout can vary by compiler/platform</button><button class="quiz-opt" data-idx="2" onclick="handleQuizClick(this)">Only for unsigned int</button><button class="quiz-opt" data-idx="3" onclick="handleQuizClick(this)">Only on Windows</button></div></div></div><div class="callout takeaway"><div class="callout-label">🔑 Key Takeaways</div><ul><li>Bit-fields let a structure reserve an exact number of bits for a member, packing several flags tightly.</li><li>This is most useful for status registers, permission flags, or similar compact boolean-style data.</li><li>Exact bit ordering and layout can vary between compilers and platforms.</li><li>Bit-fields trade a small amount of access overhead for meaningful memory savings at scale.</li></ul></div></div></div></details>
+        <div class="quiz-options" data-correct="1"><button class="quiz-opt" data-idx="0" onclick="handleQuizClick(this)">Yes, always</button><button class="quiz-opt" data-idx="1" onclick="handleQuizClick(this)">No, layout can vary by compiler/platform</button><button class="quiz-opt" data-idx="2" onclick="handleQuizClick(this)">Only for unsigned int</button><button class="quiz-opt" data-idx="3" onclick="handleQuizClick(this)">Only on Windows</button></div></div></div><div class="callout takeaway"><div class="callout-label">🔑 Key Takeaways</div><ul><li>Bit-fields let a structure reserve an exact number of bits for a member, packing several flags tightly.</li><li>This is most useful for status registers, permission flags, or similar compact boolean-style data.</li><li>Exact bit ordering and layout can vary between compilers and platforms.</li><li>Bit-fields trade a small amount of access overhead for meaningful memory savings at scale.</li></ul></div><div class="submit-block" id="submit-block-sess-11-2">
+      <div class="block-label">📤 Submit Your Case Study</div>
+      <p class="submit-hint">Write your code/answers for the assignment problems above. Sign in and get approved by the instructor to submit — your work is saved so you (and the instructor) can see your progress.</p>
+      <textarea class="submit-text" id="submit-text-sess-11-2" data-sid="sess-11-2" placeholder="Sign in to submit your work..." disabled></textarea>
+      <div class="submit-row">
+        <button class="pill submit-btn" id="submit-btn-sess-11-2" data-sid="sess-11-2" disabled>Submit</button>
+        <span class="submit-status" id="submit-status-sess-11-2"></span>
+      </div>
+    </div></div></div></details>
 <details class="experiment" >
     <summary>
       <span class="exp-num">Exp 13</span>
@@ -1437,7 +1738,15 @@ Verification: for n=9 the loop tests i=2 (9%2!=0) then i=3 (9%3==0) so it correc
         <p class="quiz-question">2. The safest workflow for AI-assisted coding is to:</p>
         <div class="quiz-options" data-correct="1"><button class="quiz-opt" data-idx="0" onclick="handleQuizClick(this)">Copy the first AI suggestion without review</button><button class="quiz-opt" data-idx="1" onclick="handleQuizClick(this)">Understand the problem first, then use AI as an accelerant, then review and test</button><button class="quiz-opt" data-idx="2" onclick="handleQuizClick(this)">Skip testing since AI code is always correct</button><button class="quiz-opt" data-idx="3" onclick="handleQuizClick(this)">Avoid ever comparing it to your own understanding</button></div></div><div class="quiz-q">
         <p class="quiz-question">3. Why can AI-generated C code sometimes be insecure?</p>
-        <div class="quiz-options" data-correct="1"><button class="quiz-opt" data-idx="0" onclick="handleQuizClick(this)">AI never writes C code</button><button class="quiz-opt" data-idx="1" onclick="handleQuizClick(this)">It can reproduce patterns from public code that include unsafe practices</button><button class="quiz-opt" data-idx="2" onclick="handleQuizClick(this)">The compiler rejects all insecure code automatically</button><button class="quiz-opt" data-idx="3" onclick="handleQuizClick(this)">Security is not relevant to code generation</button></div></div></div><div class="callout takeaway"><div class="callout-label">🔑 Key Takeaways</div><ul><li>AI coding assistants suggest plausible code based on learned patterns, not provably correct code.</li><li>Write or sketch the intended logic yourself first, then use AI suggestions as an accelerant, not a substitute.</li><li>Always compile, run, and review AI-generated code before trusting it.</li><li>Security-sensitive code deserves extra scrutiny since AI training data can contain insecure patterns.</li></ul></div></div><div class="session-card" id="sess-12-1"><div class="session-head">
+        <div class="quiz-options" data-correct="1"><button class="quiz-opt" data-idx="0" onclick="handleQuizClick(this)">AI never writes C code</button><button class="quiz-opt" data-idx="1" onclick="handleQuizClick(this)">It can reproduce patterns from public code that include unsafe practices</button><button class="quiz-opt" data-idx="2" onclick="handleQuizClick(this)">The compiler rejects all insecure code automatically</button><button class="quiz-opt" data-idx="3" onclick="handleQuizClick(this)">Security is not relevant to code generation</button></div></div></div><div class="callout takeaway"><div class="callout-label">🔑 Key Takeaways</div><ul><li>AI coding assistants suggest plausible code based on learned patterns, not provably correct code.</li><li>Write or sketch the intended logic yourself first, then use AI suggestions as an accelerant, not a substitute.</li><li>Always compile, run, and review AI-generated code before trusting it.</li><li>Security-sensitive code deserves extra scrutiny since AI training data can contain insecure patterns.</li></ul></div><div class="submit-block" id="submit-block-sess-12-0">
+      <div class="block-label">📤 Submit Your Case Study</div>
+      <p class="submit-hint">Write your code/answers for the assignment problems above. Sign in and get approved by the instructor to submit — your work is saved so you (and the instructor) can see your progress.</p>
+      <textarea class="submit-text" id="submit-text-sess-12-0" data-sid="sess-12-0" placeholder="Sign in to submit your work..." disabled></textarea>
+      <div class="submit-row">
+        <button class="pill submit-btn" id="submit-btn-sess-12-0" data-sid="sess-12-0" disabled>Submit</button>
+        <span class="submit-status" id="submit-status-sess-12-0"></span>
+      </div>
+    </div></div><div class="session-card" id="sess-12-1"><div class="session-head">
     <label class="done-toggle">
       <input type="checkbox" class="done-check" data-sid="sess-12-1">
       <span class="checkmark"></span>
@@ -1457,7 +1766,15 @@ Verification: for n=9 the loop tests i=2 (9%2!=0) then i=3 (9%3==0) so it correc
         <p class="quiz-question">2. Iterative prompting means:</p>
         <div class="quiz-options" data-correct="1"><button class="quiz-opt" data-idx="0" onclick="handleQuizClick(this)">Writing one long, perfect prompt only</button><button class="quiz-opt" data-idx="1" onclick="handleQuizClick(this)">Refining or extending a request with follow-up prompts</button><button class="quiz-opt" data-idx="2" onclick="handleQuizClick(this)">Never following up on an AI's answer</button><button class="quiz-opt" data-idx="3" onclick="handleQuizClick(this)">Repeating the exact same prompt many times</button></div></div><div class="quiz-q">
         <p class="quiz-question">3. A vague prompt like 'write code to sort numbers' forces the AI to guess:</p>
-        <div class="quiz-options" data-correct="1"><button class="quiz-opt" data-idx="0" onclick="handleQuizClick(this)">Nothing; it is fully specified</button><button class="quiz-opt" data-idx="1" onclick="handleQuizClick(this)">The language, input format, and sort order</button><button class="quiz-opt" data-idx="2" onclick="handleQuizClick(this)">Only the variable names</button><button class="quiz-opt" data-idx="3" onclick="handleQuizClick(this)">The exact test data only</button></div></div></div><div class="callout takeaway"><div class="callout-label">🔑 Key Takeaways</div><ul><li>A strong prompt states the language, the exact goal, constraints, and a test case to verify success.</li><li>Iterative prompting (asking follow-up questions) is usually more productive than one giant prompt.</li><li>Whatever the AI produces, always compile, test, and read it before using it.</li><li>Vague prompts force the AI to guess details, producing less reliable results.</li></ul></div></div><div class="session-card" id="sess-12-2"><div class="session-head">
+        <div class="quiz-options" data-correct="1"><button class="quiz-opt" data-idx="0" onclick="handleQuizClick(this)">Nothing; it is fully specified</button><button class="quiz-opt" data-idx="1" onclick="handleQuizClick(this)">The language, input format, and sort order</button><button class="quiz-opt" data-idx="2" onclick="handleQuizClick(this)">Only the variable names</button><button class="quiz-opt" data-idx="3" onclick="handleQuizClick(this)">The exact test data only</button></div></div></div><div class="callout takeaway"><div class="callout-label">🔑 Key Takeaways</div><ul><li>A strong prompt states the language, the exact goal, constraints, and a test case to verify success.</li><li>Iterative prompting (asking follow-up questions) is usually more productive than one giant prompt.</li><li>Whatever the AI produces, always compile, test, and read it before using it.</li><li>Vague prompts force the AI to guess details, producing less reliable results.</li></ul></div><div class="submit-block" id="submit-block-sess-12-1">
+      <div class="block-label">📤 Submit Your Case Study</div>
+      <p class="submit-hint">Write your code/answers for the assignment problems above. Sign in and get approved by the instructor to submit — your work is saved so you (and the instructor) can see your progress.</p>
+      <textarea class="submit-text" id="submit-text-sess-12-1" data-sid="sess-12-1" placeholder="Sign in to submit your work..." disabled></textarea>
+      <div class="submit-row">
+        <button class="pill submit-btn" id="submit-btn-sess-12-1" data-sid="sess-12-1" disabled>Submit</button>
+        <span class="submit-status" id="submit-status-sess-12-1"></span>
+      </div>
+    </div></div><div class="session-card" id="sess-12-2"><div class="session-head">
     <label class="done-toggle">
       <input type="checkbox" class="done-check" data-sid="sess-12-2">
       <span class="checkmark"></span>
@@ -1495,7 +1812,15 @@ int main(){
         <p class="quiz-question">2. Comparing an AI's string-reversal one-liner against the pointer-based version from Experiment 9 helps you:</p>
         <div class="quiz-options" data-correct="1"><button class="quiz-opt" data-idx="0" onclick="handleQuizClick(this)">Avoid learning pointers</button><button class="quiz-opt" data-idx="1" onclick="handleQuizClick(this)">Reinforce the underlying pointer/array concepts through comparison</button><button class="quiz-opt" data-idx="2" onclick="handleQuizClick(this)">Prove AI is always wrong</button><button class="quiz-opt" data-idx="3" onclick="handleQuizClick(this)">Skip testing both versions</button></div></div><div class="quiz-q">
         <p class="quiz-question">3. By the end of this experiment block, AI suggestions should be treated like:</p>
-        <div class="quiz-options" data-correct="1"><button class="quiz-opt" data-idx="0" onclick="handleQuizClick(this)">Infallible expert answers</button><button class="quiz-opt" data-idx="1" onclick="handleQuizClick(this)">Advice from a classmate — helpful, but checked against your own understanding</button><button class="quiz-opt" data-idx="2" onclick="handleQuizClick(this)">Something to ignore completely</button><button class="quiz-opt" data-idx="3" onclick="handleQuizClick(this)">A replacement for the compiler</button></div></div></div><div class="callout takeaway"><div class="callout-label">🔑 Key Takeaways</div><ul><li>Ask an AI assistant to explain its own code — a mismatched explanation often signals a bug or unnecessary complexity.</li><li>Comparing AI output against class-taught approaches reinforces the underlying concept.</li><li>By this stage, treat AI suggestions like advice from a classmate: helpful, but always checked.</li><li>Refining AI output for clarity is itself a valuable skill, not just accepting the first draft.</li></ul></div></div></div></details>
+        <div class="quiz-options" data-correct="1"><button class="quiz-opt" data-idx="0" onclick="handleQuizClick(this)">Infallible expert answers</button><button class="quiz-opt" data-idx="1" onclick="handleQuizClick(this)">Advice from a classmate — helpful, but checked against your own understanding</button><button class="quiz-opt" data-idx="2" onclick="handleQuizClick(this)">Something to ignore completely</button><button class="quiz-opt" data-idx="3" onclick="handleQuizClick(this)">A replacement for the compiler</button></div></div></div><div class="callout takeaway"><div class="callout-label">🔑 Key Takeaways</div><ul><li>Ask an AI assistant to explain its own code — a mismatched explanation often signals a bug or unnecessary complexity.</li><li>Comparing AI output against class-taught approaches reinforces the underlying concept.</li><li>By this stage, treat AI suggestions like advice from a classmate: helpful, but always checked.</li><li>Refining AI output for clarity is itself a valuable skill, not just accepting the first draft.</li></ul></div><div class="submit-block" id="submit-block-sess-12-2">
+      <div class="block-label">📤 Submit Your Case Study</div>
+      <p class="submit-hint">Write your code/answers for the assignment problems above. Sign in and get approved by the instructor to submit — your work is saved so you (and the instructor) can see your progress.</p>
+      <textarea class="submit-text" id="submit-text-sess-12-2" data-sid="sess-12-2" placeholder="Sign in to submit your work..." disabled></textarea>
+      <div class="submit-row">
+        <button class="pill submit-btn" id="submit-btn-sess-12-2" data-sid="sess-12-2" disabled>Submit</button>
+        <span class="submit-status" id="submit-status-sess-12-2"></span>
+      </div>
+    </div></div></div></details>
 <details class="experiment" >
     <summary>
       <span class="exp-num">Exp 14</span>
@@ -1534,7 +1859,15 @@ int main(){
         <p class="quiz-question">2. In the vowel-counting example, 'count' plays the role of:</p>
         <div class="quiz-options" data-correct="1"><button class="quiz-opt" data-idx="0" onclick="handleQuizClick(this)">An index</button><button class="quiz-opt" data-idx="1" onclick="handleQuizClick(this)">An accumulator (running total)</button><button class="quiz-opt" data-idx="2" onclick="handleQuizClick(this)">A flag</button><button class="quiz-opt" data-idx="3" onclick="handleQuizClick(this)">A pointer</button></div></div><div class="quiz-q">
         <p class="quiz-question">3. In the same example, 'i' plays the role of:</p>
-        <div class="quiz-options" data-correct="1"><button class="quiz-opt" data-idx="0" onclick="handleQuizClick(this)">An accumulator</button><button class="quiz-opt" data-idx="1" onclick="handleQuizClick(this)">An index/counter walking through the string</button><button class="quiz-opt" data-idx="2" onclick="handleQuizClick(this)">A flag</button><button class="quiz-opt" data-idx="3" onclick="handleQuizClick(this)">A constant</button></div></div></div><div class="callout takeaway"><div class="callout-label">🔑 Key Takeaways</div><ul><li>Identify each variable's role (counter, accumulator, flag, index) before judging what code does.</li><li>Trace control flow (loops and conditions) before worrying about small syntax details.</li><li>AI-generated code sometimes favors compact constructs over clarity.</li><li>Annotating unfamiliar code with your own comments builds real understanding, not just recognition.</li></ul></div></div><div class="session-card" id="sess-13-1"><div class="session-head">
+        <div class="quiz-options" data-correct="1"><button class="quiz-opt" data-idx="0" onclick="handleQuizClick(this)">An accumulator</button><button class="quiz-opt" data-idx="1" onclick="handleQuizClick(this)">An index/counter walking through the string</button><button class="quiz-opt" data-idx="2" onclick="handleQuizClick(this)">A flag</button><button class="quiz-opt" data-idx="3" onclick="handleQuizClick(this)">A constant</button></div></div></div><div class="callout takeaway"><div class="callout-label">🔑 Key Takeaways</div><ul><li>Identify each variable's role (counter, accumulator, flag, index) before judging what code does.</li><li>Trace control flow (loops and conditions) before worrying about small syntax details.</li><li>AI-generated code sometimes favors compact constructs over clarity.</li><li>Annotating unfamiliar code with your own comments builds real understanding, not just recognition.</li></ul></div><div class="submit-block" id="submit-block-sess-13-0">
+      <div class="block-label">📤 Submit Your Case Study</div>
+      <p class="submit-hint">Write your code/answers for the assignment problems above. Sign in and get approved by the instructor to submit — your work is saved so you (and the instructor) can see your progress.</p>
+      <textarea class="submit-text" id="submit-text-sess-13-0" data-sid="sess-13-0" placeholder="Sign in to submit your work..." disabled></textarea>
+      <div class="submit-row">
+        <button class="pill submit-btn" id="submit-btn-sess-13-0" data-sid="sess-13-0" disabled>Submit</button>
+        <span class="submit-status" id="submit-status-sess-13-0"></span>
+      </div>
+    </div></div><div class="session-card" id="sess-13-1"><div class="session-head">
     <label class="done-toggle">
       <input type="checkbox" class="done-check" data-sid="sess-13-1">
       <span class="checkmark"></span>
@@ -1572,7 +1905,15 @@ Without the 'if (n == 0)' guard, the empty-input case would divide by zero — t
         <p class="quiz-question">2. Is AI-generated code immune to missing edge cases?</p>
         <div class="quiz-options" data-correct="1"><button class="quiz-opt" data-idx="0" onclick="handleQuizClick(this)">Yes, always</button><button class="quiz-opt" data-idx="1" onclick="handleQuizClick(this)">No, it is just as capable of missing them as human-written code</button><button class="quiz-opt" data-idx="2" onclick="handleQuizClick(this)">Only for recursive functions</button><button class="quiz-opt" data-idx="3" onclick="handleQuizClick(this)">Only for string functions</button></div></div><div class="quiz-q">
         <p class="quiz-question">3. Finding a bug via an edge-case test should be viewed as:</p>
-        <div class="quiz-options" data-correct="1"><button class="quiz-opt" data-idx="0" onclick="handleQuizClick(this)">A failure of the testing exercise</button><button class="quiz-opt" data-idx="1" onclick="handleQuizClick(this)">A success — the test did its job by catching a real issue</button><button class="quiz-opt" data-idx="2" onclick="handleQuizClick(this)">Irrelevant to code quality</button><button class="quiz-opt" data-idx="3" onclick="handleQuizClick(this)">Proof the code should be discarded entirely</button></div></div></div><div class="callout takeaway"><div class="callout-label">🔑 Key Takeaways</div><ul><li>Always test zero, empty, negative, and boundary inputs, not just typical cases.</li><li>AI-generated code is just as capable of missing edge cases as human-written code.</li><li>Finding an edge case that breaks a function is the testing process succeeding, not failing.</li><li>The same normal/boundary/invalid testing discipline from Experiment 5 applies to any code, AI-generated or not.</li></ul></div></div><div class="session-card" id="sess-13-2"><div class="session-head">
+        <div class="quiz-options" data-correct="1"><button class="quiz-opt" data-idx="0" onclick="handleQuizClick(this)">A failure of the testing exercise</button><button class="quiz-opt" data-idx="1" onclick="handleQuizClick(this)">A success — the test did its job by catching a real issue</button><button class="quiz-opt" data-idx="2" onclick="handleQuizClick(this)">Irrelevant to code quality</button><button class="quiz-opt" data-idx="3" onclick="handleQuizClick(this)">Proof the code should be discarded entirely</button></div></div></div><div class="callout takeaway"><div class="callout-label">🔑 Key Takeaways</div><ul><li>Always test zero, empty, negative, and boundary inputs, not just typical cases.</li><li>AI-generated code is just as capable of missing edge cases as human-written code.</li><li>Finding an edge case that breaks a function is the testing process succeeding, not failing.</li><li>The same normal/boundary/invalid testing discipline from Experiment 5 applies to any code, AI-generated or not.</li></ul></div><div class="submit-block" id="submit-block-sess-13-1">
+      <div class="block-label">📤 Submit Your Case Study</div>
+      <p class="submit-hint">Write your code/answers for the assignment problems above. Sign in and get approved by the instructor to submit — your work is saved so you (and the instructor) can see your progress.</p>
+      <textarea class="submit-text" id="submit-text-sess-13-1" data-sid="sess-13-1" placeholder="Sign in to submit your work..." disabled></textarea>
+      <div class="submit-row">
+        <button class="pill submit-btn" id="submit-btn-sess-13-1" data-sid="sess-13-1" disabled>Submit</button>
+        <span class="submit-status" id="submit-status-sess-13-1"></span>
+      </div>
+    </div></div><div class="session-card" id="sess-13-2"><div class="session-head">
     <label class="done-toggle">
       <input type="checkbox" class="done-check" data-sid="sess-13-2">
       <span class="checkmark"></span>
@@ -1604,7 +1945,15 @@ int main(){
         <p class="quiz-question">2. int p(int x,int y){return y==0?1:x*p(x,y-1);} computes:</p>
         <div class="quiz-options" data-correct="1"><button class="quiz-opt" data-idx="0" onclick="handleQuizClick(this)">A sum</button><button class="quiz-opt" data-idx="1" onclick="handleQuizClick(this)">x raised to the power y (recursively)</button><button class="quiz-opt" data-idx="2" onclick="handleQuizClick(this)">The GCD of x and y</button><button class="quiz-opt" data-idx="3" onclick="handleQuizClick(this)">A factorial</button></div></div><div class="quiz-q">
         <p class="quiz-question">3. Renaming x and y to base and exponent in the power function:</p>
-        <div class="quiz-options" data-correct="1"><button class="quiz-opt" data-idx="0" onclick="handleQuizClick(this)">Changes the function's output</button><button class="quiz-opt" data-idx="1" onclick="handleQuizClick(this)">Improves readability without changing behaviour</button><button class="quiz-opt" data-idx="2" onclick="handleQuizClick(this)">Causes a compile error</button><button class="quiz-opt" data-idx="3" onclick="handleQuizClick(this)">Is required by the C standard</button></div></div></div><div class="callout takeaway"><div class="callout-label">🔑 Key Takeaways</div><ul><li>Refactoring changes how code is written without changing what it does.</li><li>Rename cryptic variables and add comments explaining base cases and key decisions.</li><li>Breaking a dense expression into simpler statements improves readability without changing behaviour.</li><li>Treat every AI-generated snippet you plan to keep as a draft that deserves a final readability pass.</li></ul></div></div></div></details>
+        <div class="quiz-options" data-correct="1"><button class="quiz-opt" data-idx="0" onclick="handleQuizClick(this)">Changes the function's output</button><button class="quiz-opt" data-idx="1" onclick="handleQuizClick(this)">Improves readability without changing behaviour</button><button class="quiz-opt" data-idx="2" onclick="handleQuizClick(this)">Causes a compile error</button><button class="quiz-opt" data-idx="3" onclick="handleQuizClick(this)">Is required by the C standard</button></div></div></div><div class="callout takeaway"><div class="callout-label">🔑 Key Takeaways</div><ul><li>Refactoring changes how code is written without changing what it does.</li><li>Rename cryptic variables and add comments explaining base cases and key decisions.</li><li>Breaking a dense expression into simpler statements improves readability without changing behaviour.</li><li>Treat every AI-generated snippet you plan to keep as a draft that deserves a final readability pass.</li></ul></div><div class="submit-block" id="submit-block-sess-13-2">
+      <div class="block-label">📤 Submit Your Case Study</div>
+      <p class="submit-hint">Write your code/answers for the assignment problems above. Sign in and get approved by the instructor to submit — your work is saved so you (and the instructor) can see your progress.</p>
+      <textarea class="submit-text" id="submit-text-sess-13-2" data-sid="sess-13-2" placeholder="Sign in to submit your work..." disabled></textarea>
+      <div class="submit-row">
+        <button class="pill submit-btn" id="submit-btn-sess-13-2" data-sid="sess-13-2" disabled>Submit</button>
+        <span class="submit-status" id="submit-status-sess-13-2"></span>
+      </div>
+    </div></div></div></details>
 <details class="experiment" >
     <summary>
       <span class="exp-num">Exp 15</span>
@@ -1631,7 +1980,15 @@ int main(){
         <p class="quiz-question">2. What should be defined before writing any project code?</p>
         <div class="quiz-options" data-correct="1"><button class="quiz-opt" data-idx="0" onclick="handleQuizClick(this)">Only the final print statements</button><button class="quiz-opt" data-idx="1" onclick="handleQuizClick(this)">Scope, inputs, outputs, and modules</button><button class="quiz-opt" data-idx="2" onclick="handleQuizClick(this)">The exact line count of the final program</button><button class="quiz-opt" data-idx="3" onclick="handleQuizClick(this)">Nothing; start coding immediately</button></div></div><div class="quiz-q">
         <p class="quiz-question">3. Which is a reasonable scope decision for a first mini project?</p>
-        <div class="quiz-options" data-correct="1"><button class="quiz-opt" data-idx="0" onclick="handleQuizClick(this)">An extremely ambitious system with no testing time</button><button class="quiz-opt" data-idx="1" onclick="handleQuizClick(this)">A realistic, well-tested set of a few core modules</button><button class="quiz-opt" data-idx="2" onclick="handleQuizClick(this)">No planning at all</button><button class="quiz-opt" data-idx="3" onclick="handleQuizClick(this)">A project with only one function and no structures</button></div></div></div><div class="callout takeaway"><div class="callout-label">🔑 Key Takeaways</div><ul><li>Choose a project topic that naturally uses several concepts from the semester together.</li><li>Plan scope, inputs, outputs, and modules before writing any code, exactly as in Experiment 2.</li><li>A realistic, well-tested scope demonstrates more understanding than an ambitious, unfinished one.</li><li>Sketching the menu and module list up front avoids confusion later in the project.</li></ul></div></div><div class="session-card" id="sess-14-1"><div class="session-head">
+        <div class="quiz-options" data-correct="1"><button class="quiz-opt" data-idx="0" onclick="handleQuizClick(this)">An extremely ambitious system with no testing time</button><button class="quiz-opt" data-idx="1" onclick="handleQuizClick(this)">A realistic, well-tested set of a few core modules</button><button class="quiz-opt" data-idx="2" onclick="handleQuizClick(this)">No planning at all</button><button class="quiz-opt" data-idx="3" onclick="handleQuizClick(this)">A project with only one function and no structures</button></div></div></div><div class="callout takeaway"><div class="callout-label">🔑 Key Takeaways</div><ul><li>Choose a project topic that naturally uses several concepts from the semester together.</li><li>Plan scope, inputs, outputs, and modules before writing any code, exactly as in Experiment 2.</li><li>A realistic, well-tested scope demonstrates more understanding than an ambitious, unfinished one.</li><li>Sketching the menu and module list up front avoids confusion later in the project.</li></ul></div><div class="submit-block" id="submit-block-sess-14-0">
+      <div class="block-label">📤 Submit Your Case Study</div>
+      <p class="submit-hint">Write your code/answers for the assignment problems above. Sign in and get approved by the instructor to submit — your work is saved so you (and the instructor) can see your progress.</p>
+      <textarea class="submit-text" id="submit-text-sess-14-0" data-sid="sess-14-0" placeholder="Sign in to submit your work..." disabled></textarea>
+      <div class="submit-row">
+        <button class="pill submit-btn" id="submit-btn-sess-14-0" data-sid="sess-14-0" disabled>Submit</button>
+        <span class="submit-status" id="submit-status-sess-14-0"></span>
+      </div>
+    </div></div><div class="session-card" id="sess-14-1"><div class="session-head">
     <label class="done-toggle">
       <input type="checkbox" class="done-check" data-sid="sess-14-1">
       <span class="checkmark"></span>
@@ -1671,7 +2028,15 @@ int main(){
         <p class="quiz-question">2. Why test addStudent() in isolation before writing displayAll()?</p>
         <div class="quiz-options" data-correct="0"><button class="quiz-opt" data-idx="0" onclick="handleQuizClick(this)">To ensure data is being stored correctly before building on top of it</button><button class="quiz-opt" data-idx="1" onclick="handleQuizClick(this)">Because displayAll() cannot be written otherwise</button><button class="quiz-opt" data-idx="2" onclick="handleQuizClick(this)">Testing in isolation is never useful</button><button class="quiz-opt" data-idx="3" onclick="handleQuizClick(this)">It is required by the C compiler</button></div></div><div class="quiz-q">
         <p class="quiz-question">3. A simple backup habit before a large change might include:</p>
-        <div class="quiz-options" data-correct="1"><button class="quiz-opt" data-idx="0" onclick="handleQuizClick(this)">Never saving any version of the file</button><button class="quiz-opt" data-idx="1" onclick="handleQuizClick(this)">Copying the file with a date in its name, or using version control</button><button class="quiz-opt" data-idx="2" onclick="handleQuizClick(this)">Deleting the working version immediately</button><button class="quiz-opt" data-idx="3" onclick="handleQuizClick(this)">Ignoring backups entirely since bugs never happen</button></div></div></div><div class="callout takeaway"><div class="callout-label">🔑 Key Takeaways</div><ul><li>Implement and test one function at a time rather than writing everything at once.</li><li>Confirm each module works correctly before moving on to the next.</li><li>Keep a simple backup habit before making large changes to working code.</li><li>Integration should happen only after each individual module is verified.</li></ul></div></div><div class="session-card" id="sess-14-2"><div class="session-head">
+        <div class="quiz-options" data-correct="1"><button class="quiz-opt" data-idx="0" onclick="handleQuizClick(this)">Never saving any version of the file</button><button class="quiz-opt" data-idx="1" onclick="handleQuizClick(this)">Copying the file with a date in its name, or using version control</button><button class="quiz-opt" data-idx="2" onclick="handleQuizClick(this)">Deleting the working version immediately</button><button class="quiz-opt" data-idx="3" onclick="handleQuizClick(this)">Ignoring backups entirely since bugs never happen</button></div></div></div><div class="callout takeaway"><div class="callout-label">🔑 Key Takeaways</div><ul><li>Implement and test one function at a time rather than writing everything at once.</li><li>Confirm each module works correctly before moving on to the next.</li><li>Keep a simple backup habit before making large changes to working code.</li><li>Integration should happen only after each individual module is verified.</li></ul></div><div class="submit-block" id="submit-block-sess-14-1">
+      <div class="block-label">📤 Submit Your Case Study</div>
+      <p class="submit-hint">Write your code/answers for the assignment problems above. Sign in and get approved by the instructor to submit — your work is saved so you (and the instructor) can see your progress.</p>
+      <textarea class="submit-text" id="submit-text-sess-14-1" data-sid="sess-14-1" placeholder="Sign in to submit your work..." disabled></textarea>
+      <div class="submit-row">
+        <button class="pill submit-btn" id="submit-btn-sess-14-1" data-sid="sess-14-1" disabled>Submit</button>
+        <span class="submit-status" id="submit-status-sess-14-1"></span>
+      </div>
+    </div></div><div class="session-card" id="sess-14-2"><div class="session-head">
     <label class="done-toggle">
       <input type="checkbox" class="done-check" data-sid="sess-14-2">
       <span class="checkmark"></span>
@@ -1708,7 +2073,15 @@ Roll number 9 not found</pre></div></details></div><div class="callout assign"><
         <p class="quiz-question">2. A good presentation structure follows:</p>
         <div class="quiz-options" data-correct="1"><button class="quiz-opt" data-idx="0" onclick="handleQuizClick(this)">Reading the source code line by line with no context</button><button class="quiz-opt" data-idx="1" onclick="handleQuizClick(this)">Input, process, output — the same structure used throughout the course</button><button class="quiz-opt" data-idx="2" onclick="handleQuizClick(this)">Only showing the final printed result with no explanation</button><button class="quiz-opt" data-idx="3" onclick="handleQuizClick(this)">Skipping the demonstration entirely</button></div></div><div class="quiz-q">
         <p class="quiz-question">3. Testing searchByRoll() for a roll number that does not exist checks:</p>
-        <div class="quiz-options" data-correct="1"><button class="quiz-opt" data-idx="0" onclick="handleQuizClick(this)">A typical case only</button><button class="quiz-opt" data-idx="1" onclick="handleQuizClick(this)">An important 'not found' edge case</button><button class="quiz-opt" data-idx="2" onclick="handleQuizClick(this)">An invalid case that should never be tested</button><button class="quiz-opt" data-idx="3" onclick="handleQuizClick(this)">Nothing useful</button></div></div></div><div class="callout takeaway"><div class="callout-label">🔑 Key Takeaways</div><ul><li>Verify every requirement from the planning session is actually met, including edge cases.</li><li>Present using the same input-process-output structure used throughout the course.</li><li>Prepare a few likely viva questions about your design choices with confident, grounded answers.</li><li>Identify at least one limitation of the project and how it could be improved with more time.</li></ul></div></div></div></details>
+        <div class="quiz-options" data-correct="1"><button class="quiz-opt" data-idx="0" onclick="handleQuizClick(this)">A typical case only</button><button class="quiz-opt" data-idx="1" onclick="handleQuizClick(this)">An important 'not found' edge case</button><button class="quiz-opt" data-idx="2" onclick="handleQuizClick(this)">An invalid case that should never be tested</button><button class="quiz-opt" data-idx="3" onclick="handleQuizClick(this)">Nothing useful</button></div></div></div><div class="callout takeaway"><div class="callout-label">🔑 Key Takeaways</div><ul><li>Verify every requirement from the planning session is actually met, including edge cases.</li><li>Present using the same input-process-output structure used throughout the course.</li><li>Prepare a few likely viva questions about your design choices with confident, grounded answers.</li><li>Identify at least one limitation of the project and how it could be improved with more time.</li></ul></div><div class="submit-block" id="submit-block-sess-14-2">
+      <div class="block-label">📤 Submit Your Case Study</div>
+      <p class="submit-hint">Write your code/answers for the assignment problems above. Sign in and get approved by the instructor to submit — your work is saved so you (and the instructor) can see your progress.</p>
+      <textarea class="submit-text" id="submit-text-sess-14-2" data-sid="sess-14-2" placeholder="Sign in to submit your work..." disabled></textarea>
+      <div class="submit-row">
+        <button class="pill submit-btn" id="submit-btn-sess-14-2" data-sid="sess-14-2" disabled>Submit</button>
+        <span class="submit-status" id="submit-status-sess-14-2"></span>
+      </div>
+    </div></div></div></details>
 </main>
 
 <footer>
@@ -1717,6 +2090,21 @@ Roll number 9 not found</pre></div></details></div><div class="callout assign"><
 
 <script>
 const TOTAL_SESSIONS = 45;
+const ADMIN_EMAIL = "ccvy.ram@gmail.com";
+const firebaseConfig = {
+  "apiKey": "AIzaSyB3BuOYTqPrlqCjBUuJlOO6dCs-6N_qOjg",
+  "authDomain": "pps1-companion.firebaseapp.com",
+  "projectId": "pps1-companion",
+  "storageBucket": "pps1-companion.firebasestorage.app",
+  "messagingSenderId": "162735098995",
+  "appId": "1:162735098995:web:88db8a30757b4a06d12e06"
+};
+firebase.initializeApp(firebaseConfig);
+const auth = firebase.auth();
+const db = firebase.firestore();
+
+let currentUser = null;
+let currentStatus = null; // 'pending' | 'approved' | 'rejected' | null
 
 function updateProgress(){
   const checked = document.querySelectorAll('.done-check:checked').length;
@@ -1725,22 +2113,146 @@ function updateProgress(){
   document.getElementById('progress-label').textContent = checked + ' / ' + TOTAL_SESSIONS + ' sessions done';
 }
 
-function loadProgress(){
+function setInteractiveEnabled(enabled){
+  document.querySelectorAll('.submit-text').forEach(t => {
+    t.disabled = !enabled;
+    t.placeholder = enabled ? "Paste your code or write your answers here..." : "Sign in and get approved by the instructor to submit...";
+  });
+  document.querySelectorAll('.submit-btn').forEach(b => { b.disabled = !enabled; });
+}
+
+function loadLocalProgress(){
   document.querySelectorAll('.done-check').forEach(cb => {
     const sid = cb.dataset.sid;
     const val = localStorage.getItem('ppsgz_' + sid);
-    if (val === '1') {
-      cb.checked = true;
-      document.getElementById(sid).classList.add('completed');
-    }
-    cb.addEventListener('change', () => {
-      localStorage.setItem('ppsgz_' + sid, cb.checked ? '1' : '0');
-      document.getElementById(sid).classList.toggle('completed', cb.checked);
-      updateProgress();
-    });
+    cb.checked = val === '1';
+    document.getElementById(sid).classList.toggle('completed', cb.checked);
   });
   updateProgress();
 }
+
+function wireCheckboxes(){
+  document.querySelectorAll('.done-check').forEach(cb => {
+    cb.addEventListener('change', () => {
+      const sid = cb.dataset.sid;
+      document.getElementById(sid).classList.toggle('completed', cb.checked);
+      updateProgress();
+      if (currentUser && currentStatus === 'approved') {
+        db.collection('users').doc(currentUser.uid).collection('progress').doc(sid)
+          .set({ done: cb.checked, updatedAt: firebase.firestore.FieldValue.serverTimestamp() }, { merge: true })
+          .catch(err => console.error('progress sync failed', err));
+      } else {
+        localStorage.setItem('ppsgz_' + sid, cb.checked ? '1' : '0');
+      }
+    });
+  });
+}
+
+function wireSubmissions(){
+  document.querySelectorAll('.submit-btn').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const sid = btn.dataset.sid;
+      const text = document.getElementById('submit-text-' + sid).value;
+      const statusEl = document.getElementById('submit-status-' + sid);
+      if (!currentUser || currentStatus !== 'approved') return;
+      btn.disabled = true;
+      statusEl.textContent = 'Saving...';
+      try {
+        await db.collection('users').doc(currentUser.uid).collection('submissions').doc(sid).set({
+          text,
+          updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+        }, { merge: true });
+        const now = new Date();
+        statusEl.textContent = '✓ Submitted at ' + now.toLocaleTimeString();
+      } catch (err) {
+        console.error(err);
+        statusEl.textContent = 'Failed to save — try again.';
+      }
+      btn.disabled = false;
+    });
+  });
+}
+
+async function loadUserData(uid){
+  const progressSnap = await db.collection('users').doc(uid).collection('progress').get();
+  progressSnap.forEach(doc => {
+    const sid = doc.id;
+    const cb = document.querySelector('.done-check[data-sid="' + sid + '"]');
+    if (cb) {
+      cb.checked = !!doc.data().done;
+      const card = document.getElementById(sid);
+      if (card) card.classList.toggle('completed', cb.checked);
+    }
+  });
+  const subSnap = await db.collection('users').doc(uid).collection('submissions').get();
+  subSnap.forEach(doc => {
+    const sid = doc.id;
+    const ta = document.getElementById('submit-text-' + sid);
+    if (ta) ta.value = doc.data().text || '';
+  });
+  updateProgress();
+}
+
+async function ensureUserDoc(user){
+  const ref = db.collection('users').doc(user.uid);
+  const snap = await ref.get();
+  if (!snap.exists) {
+    await ref.set({
+      email: user.email,
+      name: user.displayName,
+      photoURL: user.photoURL,
+      status: 'pending',
+      createdAt: firebase.firestore.FieldValue.serverTimestamp()
+    });
+    return 'pending';
+  }
+  return snap.data().status || 'pending';
+}
+
+function renderAuthUI(){
+  const signedOut = document.getElementById('auth-signed-out');
+  const signedIn = document.getElementById('auth-signed-in');
+  if (!currentUser) {
+    signedOut.style.display = '';
+    signedIn.style.display = 'none';
+    setInteractiveEnabled(false);
+    return;
+  }
+  signedOut.style.display = 'none';
+  signedIn.style.display = 'flex';
+  signedIn.style.alignItems = 'center';
+  signedIn.style.gap = '10px';
+  document.getElementById('auth-avatar').src = currentUser.photoURL || '';
+  document.getElementById('auth-name').textContent = currentUser.displayName || currentUser.email;
+  const statusEl = document.getElementById('auth-status');
+  statusEl.className = 'status-badge ' + currentStatus;
+  statusEl.textContent = currentStatus === 'approved' ? '✓ Approved' : currentStatus === 'pending' ? '⏳ Pending approval' : '✕ Access denied';
+  document.getElementById('admin-link').style.display = (currentUser.email === ADMIN_EMAIL) ? '' : 'none';
+  setInteractiveEnabled(currentStatus === 'approved');
+}
+
+auth.onAuthStateChanged(async (user) => {
+  currentUser = user;
+  if (user) {
+    currentStatus = await ensureUserDoc(user);
+    renderAuthUI();
+    if (currentStatus === 'approved') {
+      await loadUserData(user.uid);
+    } else {
+      loadLocalProgress();
+    }
+  } else {
+    currentStatus = null;
+    renderAuthUI();
+    loadLocalProgress();
+  }
+});
+
+document.getElementById('signin-btn').addEventListener('click', () => {
+  const provider = new firebase.auth.GoogleAuthProvider();
+  auth.signInWithPopup(provider).catch(err => alert('Sign-in failed: ' + err.message));
+});
+document.getElementById('signout-btn').addEventListener('click', () => auth.signOut());
 
 function handleQuizClick(btn){
   const group = btn.parentElement;
@@ -1777,7 +2289,9 @@ document.getElementById('collapse-all').addEventListener('click', () => {
   if (saved) document.documentElement.setAttribute('data-theme', saved);
 })();
 
-loadProgress();
+wireCheckboxes();
+wireSubmissions();
+loadLocalProgress();
 </script>
 </body>
 </html>

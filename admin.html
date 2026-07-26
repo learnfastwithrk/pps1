@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PPS-1 Companion — Admin Dashboard</title>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<style>
+
+  :root{
+    --bg: #0f0e17; --bg2: #1a1825; --card: #201d30; --text: #fffffe; --muted: #a7a9be;
+    --accent: #ff8906; --accent2: #f25f4c; --accent3: #e53170; --purple: #7f5af0; --teal: #2cb67d; --border: #33304a;
+  }
+  [data-theme="light"]{ --bg: #fbfaff; --bg2: #f2f0ff; --card: #ffffff; --text: #16161a; --muted: #5a5a6e; --border: #e2e0f5; }
+  *{box-sizing:border-box;}
+  body{ margin:0; font-family:'Poppins','Segoe UI',system-ui,sans-serif; background: var(--bg); color: var(--text); transition: background .3s, color .3s; }
+  a{color:var(--purple);}
+  button.pill{
+    font-family:inherit; cursor:pointer; border:none; border-radius:999px; padding:10px 20px;
+    font-weight:600; font-size:14px; background: var(--purple); color:white;
+    box-shadow: 0 6px 18px rgba(127,90,240,0.35); transition: transform .15s;
+  }
+  button.pill:hover{ transform: translateY(-2px); }
+  button.pill.secondary{ background: var(--card); color:var(--text); border:1px solid var(--border); box-shadow:none;}
+  button.pill:disabled{ opacity:.5; cursor:not-allowed; transform:none; }
+  .auth-bar{
+    max-width:880px; margin:0 auto; padding:12px 20px; display:flex; align-items:center; justify-content:center;
+    gap:12px; flex-wrap:wrap; font-size:14px;
+  }
+  .auth-bar img{ width:28px; height:28px; border-radius:50%; }
+  .status-badge{ padding:4px 10px; border-radius:999px; font-size:12px; font-weight:600; }
+  .status-badge.pending{ background: rgba(255,137,6,0.2); color:var(--accent); }
+  .status-badge.approved{ background: rgba(44,182,125,0.2); color:var(--teal); }
+  .status-badge.rejected{ background: rgba(242,95,76,0.2); color:var(--accent2); }
+
+  body{ padding-bottom: 60px; }
+  header.top{ max-width:1100px; margin:0 auto; padding:24px 20px 10px; display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:12px;}
+  header.top h1{ font-size:24px; margin:0; }
+  main{ max-width:1100px; margin:0 auto; padding:0 20px 60px; }
+  .card{ background:var(--card); border:1px solid var(--border); border-radius:14px; padding:20px; margin-bottom:22px; }
+  .card h2{ margin-top:0; font-size:17px; }
+  table{ width:100%; border-collapse:collapse; font-size:13.5px; }
+  th, td{ text-align:left; padding:8px 10px; border-bottom:1px solid var(--border); vertical-align:top; }
+  th{ color:var(--muted); font-weight:600; font-size:12.5px; text-transform:uppercase; letter-spacing:.02em; }
+  .bar-outer{ background:var(--border); border-radius:999px; height:8px; width:100px; overflow:hidden; display:inline-block; vertical-align:middle; margin-right:8px;}
+  .bar-inner{ height:100%; background:linear-gradient(90deg, var(--teal), var(--purple)); }
+  .btn-sm{ font-size:12px; padding:5px 12px; }
+  .muted{ color:var(--muted); }
+  #not-authorized, #signed-out{ text-align:center; padding:80px 20px; color:var(--muted); }
+  .sub-modal-bg{ position:fixed; inset:0; background:rgba(0,0,0,0.6); display:none; align-items:center; justify-content:center; z-index:50; padding:20px;}
+  .sub-modal{ background:var(--card); border:1px solid var(--border); border-radius:14px; max-width:700px; width:100%; max-height:80vh; overflow:auto; padding:22px; }
+  .sub-modal h3{ margin-top:0; }
+  .sub-modal .sub-item{ margin-bottom:16px; padding-bottom:16px; border-bottom:1px solid var(--border); }
+  .sub-modal pre{ white-space:pre-wrap; background:var(--bg2); padding:10px; border-radius:8px; font-size:12.5px; }
+  .close-btn{ float:right; }
+</style>
+</head>
+<body>
+<header class="top">
+  <h1>🛠 PPS-1 Companion — Admin</h1>
+  <div><a href="index.html">← Back to companion</a></div>
+</header>
+<main>
+  <div id="signed-out">
+    <p>Sign in with the admin Google account to view the dashboard.</p>
+    <button class="pill" id="signin-btn">Sign in with Google</button>
+  </div>
+  <div id="not-authorized" style="display:none;">
+    <p>This account is not authorized to view the admin dashboard.</p>
+    <button class="pill secondary" id="signout-btn-2">Sign out</button>
+  </div>
+  <div id="admin-content" style="display:none;">
+    <div class="card">
+      <h2>⏳ Pending approvals (<span id="pending-count">0</span>)</h2>
+      <table id="pending-table"><thead><tr><th>Name</th><th>Email</th><th>Requested</th><th>Action</th></tr></thead><tbody></tbody></table>
+      <p class="muted" id="no-pending" style="display:none;">No pending sign-ups right now.</p>
+    </div>
+    <div class="card">
+      <h2>👥 Roster (<span id="roster-count">0</span> approved)</h2>
+      <table id="roster-table"><thead><tr><th>Name</th><th>Email</th><th>Sessions done</th><th>Submissions</th><th></th></tr></thead><tbody></tbody></table>
+    </div>
+  </div>
+</main>
+
+<div class="sub-modal-bg" id="sub-modal-bg">
+  <div class="sub-modal">
+    <button class="pill secondary btn-sm close-btn" id="close-modal">Close</button>
+    <h3 id="sub-modal-title">Submissions</h3>
+    <div id="sub-modal-body"></div>
+  </div>
+</div>
+
+<script>
+const ADMIN_EMAIL = "ccvy.ram@gmail.com";
+const SESSION_META = [{"sid":"sess-0-0","exp":1,"expTitle":"Basic Components of a Computer, Von Neumann Architecture, Number Systems, and Data Representation","day":"Monday","topic":"Basic components of a computer"},{"sid":"sess-0-1","exp":1,"expTitle":"Basic Components of a Computer, Von Neumann Architecture, Number Systems, and Data Representation","day":"Tuesday","topic":"Von Neumann architecture and stored program model"},{"sid":"sess-0-2","exp":1,"expTitle":"Basic Components of a Computer, Von Neumann Architecture, Number Systems, and Data Representation","day":"Friday","topic":"Binary and hexadecimal systems; conversions; data representation"},{"sid":"sess-1-0","exp":2,"expTitle":"Flowcharts, Pseudocode, and Problem-Solving","day":"Monday","topic":"Flowcharts and pseudocode"},{"sid":"sess-1-1","exp":2,"expTitle":"Flowcharts, Pseudocode, and Problem-Solving","day":"Tuesday","topic":"Problem-solving strategies"},{"sid":"sess-1-2","exp":2,"expTitle":"Flowcharts, Pseudocode, and Problem-Solving","day":"Friday","topic":"C compilation process; syntax and semantic errors"},{"sid":"sess-2-0","exp":3,"expTitle":"Variables, Data Types, Operators, and Expressions","day":"Monday","topic":"Variable names, data types and sizes, constants, declarations"},{"sid":"sess-2-1","exp":3,"expTitle":"Variables, Data Types, Operators, and Expressions","day":"Tuesday","topic":"Arithmetic, relational, logical, and bitwise operators"},{"sid":"sess-2-2","exp":3,"expTitle":"Variables, Data Types, Operators, and Expressions","day":"Friday","topic":"Type conversions, increment/decrement, assignment, conditional expressions, precedence"},{"sid":"sess-3-0","exp":4,"expTitle":"Selection Statements, Switch, and Top-Down Design","day":"Monday","topic":"Statements and blocks; if-else and else-if"},{"sid":"sess-3-1","exp":4,"expTitle":"Selection Statements, Switch, and Top-Down Design","day":"Tuesday","topic":"Switch; top-down design and breaking problems into sub-problems"},{"sid":"sess-3-2","exp":4,"expTitle":"Selection Statements, Switch, and Top-Down Design","day":"Friday","topic":"Loops: while, for, do-while; break, continue; goto and labels"},{"sid":"sess-4-0","exp":5,"expTitle":"Implementation of Algorithms and Functions","day":"Monday","topic":"Implementation of algorithms and modularity"},{"sid":"sess-4-1","exp":5,"expTitle":"Implementation of Algorithms and Functions","day":"Tuesday","topic":"Choice of variable names; documentation; debugging"},{"sid":"sess-4-2","exp":5,"expTitle":"Implementation of Algorithms and Functions","day":"Friday","topic":"Program testing; basics of functions; non-integer returns; external variables"},{"sid":"sess-5-0","exp":6,"expTitle":"Scope Rules, Header Files, and Storage Classes","day":"Monday","topic":"Scope rules and block structure"},{"sid":"sess-5-1","exp":6,"expTitle":"Scope Rules, Header Files, and Storage Classes","day":"Tuesday","topic":"Header files and initialization"},{"sid":"sess-5-2","exp":6,"expTitle":"Scope Rules, Header Files, and Storage Classes","day":"Friday","topic":"Static variables and register variables"},{"sid":"sess-6-0","exp":7,"expTitle":"Input/Output and Library Functions","day":"Monday","topic":"Input/output with <stdio.h>; formatted output"},{"sid":"sess-6-1","exp":7,"expTitle":"Input/Output and Library Functions","day":"Tuesday","topic":"Formatted input; character I/O; direct I/O"},{"sid":"sess-6-2","exp":7,"expTitle":"Input/Output and Library Functions","day":"Friday","topic":"<ctype.h>, <string.h>, <math.h>, <stdlib.h>"},{"sid":"sess-7-0","exp":8,"expTitle":"Recursion and the C Preprocessor","day":"Monday","topic":"Recursion"},{"sid":"sess-7-1","exp":8,"expTitle":"Recursion and the C Preprocessor","day":"Tuesday","topic":"C preprocessor; file inclusion; macro substitution"},{"sid":"sess-7-2","exp":8,"expTitle":"Recursion and the C Preprocessor","day":"Friday","topic":"Conditional inclusion"},{"sid":"sess-8-0","exp":9,"expTitle":"Pointers and Arrays","day":"Monday","topic":"Pointers and addresses"},{"sid":"sess-8-1","exp":9,"expTitle":"Pointers and Arrays","day":"Tuesday","topic":"Pointers and function arguments; pointers and arrays"},{"sid":"sess-8-2","exp":9,"expTitle":"Pointers and Arrays","day":"Friday","topic":"Address arithmetic; character pointers and functions"},{"sid":"sess-9-0","exp":10,"expTitle":"Advanced Arrays and Function Pointers","day":"Monday","topic":"Pointer arrays (pointers to pointers)"},{"sid":"sess-9-1","exp":10,"expTitle":"Advanced Arrays and Function Pointers","day":"Tuesday","topic":"Multi-dimensional arrays; initialization of pointer arrays"},{"sid":"sess-9-2","exp":10,"expTitle":"Advanced Arrays and Function Pointers","day":"Friday","topic":"Pointers vs. multi-dimensional arrays; command-line arguments; pointers to functions"},{"sid":"sess-10-0","exp":11,"expTitle":"Structures","day":"Monday","topic":"Basics of structures"},{"sid":"sess-10-1","exp":11,"expTitle":"Structures","day":"Tuesday","topic":"Structures and functions; arrays of structures"},{"sid":"sess-10-2","exp":11,"expTitle":"Structures","day":"Friday","topic":"Pointers to structures"},{"sid":"sess-11-0","exp":12,"expTitle":"Table Lookup, typedef, Unions, and Bit-Fields","day":"Monday","topic":"Table lookup"},{"sid":"sess-11-1","exp":12,"expTitle":"Table Lookup, typedef, Unions, and Bit-Fields","day":"Tuesday","topic":"typedef and unions"},{"sid":"sess-11-2","exp":12,"expTitle":"Table Lookup, typedef, Unions, and Bit-Fields","day":"Friday","topic":"Bit-fields"},{"sid":"sess-12-0","exp":13,"expTitle":"Basics of AI-Assisted Coding","day":"Monday","topic":"Basics of AI-assisted coding using GitHub Copilot / CodiumAI"},{"sid":"sess-12-1","exp":13,"expTitle":"Basics of AI-Assisted Coding","day":"Tuesday","topic":"Prompting and workflow practice"},{"sid":"sess-12-2","exp":13,"expTitle":"Basics of AI-Assisted Coding","day":"Friday","topic":"Mini review and application"},{"sid":"sess-13-0","exp":14,"expTitle":"Code Comprehension Using AI-Generated Code","day":"Monday","topic":"Reading AI-generated code"},{"sid":"sess-13-1","exp":14,"expTitle":"Code Comprehension Using AI-Generated Code","day":"Tuesday","topic":"Checking correctness and edge cases"},{"sid":"sess-13-2","exp":14,"expTitle":"Code Comprehension Using AI-Generated Code","day":"Friday","topic":"Improving AI-generated code"},{"sid":"sess-14-0","exp":15,"expTitle":"Mini Project","day":"Monday","topic":"Mini project planning and topic finalization"},{"sid":"sess-14-1","exp":15,"expTitle":"Mini Project","day":"Tuesday","topic":"Mini project implementation"},{"sid":"sess-14-2","exp":15,"expTitle":"Mini Project","day":"Friday","topic":"Mini project testing, debugging, and presentation"}];
+const TOTAL_SESSIONS = 45;
+const SESSION_LABEL = {};
+SESSION_META.forEach(m => { SESSION_LABEL[m.sid] = 'Exp ' + m.exp + ' — ' + m.day + ' — ' + m.topic; });
+
+const firebaseConfig = {
+  "apiKey": "AIzaSyB3BuOYTqPrlqCjBUuJlOO6dCs-6N_qOjg",
+  "authDomain": "pps1-companion.firebaseapp.com",
+  "projectId": "pps1-companion",
+  "storageBucket": "pps1-companion.firebasestorage.app",
+  "messagingSenderId": "162735098995",
+  "appId": "1:162735098995:web:88db8a30757b4a06d12e06"
+};
+firebase.initializeApp(firebaseConfig);
+const auth = firebase.auth();
+const db = firebase.firestore();
+
+document.getElementById('signin-btn').addEventListener('click', () => {
+  const provider = new firebase.auth.GoogleAuthProvider();
+  auth.signInWithPopup(provider).catch(err => alert('Sign-in failed: ' + err.message));
+});
+document.getElementById('signout-btn-2').addEventListener('click', () => auth.signOut());
+document.getElementById('close-modal').addEventListener('click', () => {
+  document.getElementById('sub-modal-bg').style.display = 'none';
+});
+
+async function approveUser(uid, approve){
+  await db.collection('users').doc(uid).update({ status: approve ? 'approved' : 'rejected' });
+  await loadDashboard();
+}
+
+async function showSubmissions(uid, name){
+  const snap = await db.collection('users').doc(uid).collection('submissions').get();
+  const body = document.getElementById('sub-modal-body');
+  document.getElementById('sub-modal-title').textContent = 'Submissions — ' + name;
+  if (snap.empty) {
+    body.innerHTML = '<p class="muted">No submissions yet.</p>';
+  } else {
+    let h = '';
+    snap.forEach(doc => {
+      const d = doc.data();
+      const label = SESSION_LABEL[doc.id] || doc.id;
+      h += '<div class="sub-item"><strong>' + label + '</strong><pre>' + (d.text || '').replace(/[<>&]/g, c => ({'<':'&lt;','>':'&gt;','&':'&amp;'}[c])) + '</pre></div>';
+    });
+    body.innerHTML = h;
+  }
+  document.getElementById('sub-modal-bg').style.display = 'flex';
+}
+
+async function loadDashboard(){
+  const usersSnap = await db.collection('users').get();
+  const pendingBody = document.querySelector('#pending-table tbody');
+  const rosterBody = document.querySelector('#roster-table tbody');
+  pendingBody.innerHTML = '';
+  rosterBody.innerHTML = '';
+  let pendingCount = 0, approvedCount = 0;
+
+  const progressSnap = await db.collectionGroup('progress').get();
+  const subsSnap = await db.collectionGroup('submissions').get();
+  const progressByUid = {};
+  progressSnap.forEach(doc => {
+    const uid = doc.ref.parent.parent.id;
+    if (!progressByUid[uid]) progressByUid[uid] = 0;
+    if (doc.data().done) progressByUid[uid]++;
+  });
+  const subsByUid = {};
+  subsSnap.forEach(doc => {
+    const uid = doc.ref.parent.parent.id;
+    if (!subsByUid[uid]) subsByUid[uid] = 0;
+    subsByUid[uid]++;
+  });
+
+  usersSnap.forEach(doc => {
+    const u = doc.data();
+    const uid = doc.id;
+    if (u.status === 'pending') {
+      pendingCount++;
+      const tr = document.createElement('tr');
+      const created = u.createdAt && u.createdAt.toDate ? u.createdAt.toDate().toLocaleString() : '—';
+      tr.innerHTML = '<td>' + (u.name || '—') + '</td><td>' + (u.email || '—') + '</td><td>' + created + '</td><td></td>';
+      const td = tr.querySelector('td:last-child');
+      const approveBtn = document.createElement('button');
+      approveBtn.className = 'pill btn-sm';
+      approveBtn.textContent = 'Approve';
+      approveBtn.onclick = () => approveUser(uid, true);
+      const rejectBtn = document.createElement('button');
+      rejectBtn.className = 'pill secondary btn-sm';
+      rejectBtn.style.marginLeft = '8px';
+      rejectBtn.textContent = 'Reject';
+      rejectBtn.onclick = () => approveUser(uid, false);
+      td.appendChild(approveBtn); td.appendChild(rejectBtn);
+      pendingBody.appendChild(tr);
+    } else if (u.status === 'approved') {
+      approvedCount++;
+      const done = progressByUid[uid] || 0;
+      const subs = subsByUid[uid] || 0;
+      const pct = Math.round((done / TOTAL_SESSIONS) * 100);
+      const tr = document.createElement('tr');
+      tr.innerHTML = '<td>' + (u.name || '—') + '</td><td>' + (u.email || '—') + '</td>' +
+        '<td><span class="bar-outer"><span class="bar-inner" style="width:' + pct + '%"></span></span>' + done + ' / ' + TOTAL_SESSIONS + '</td>' +
+        '<td>' + subs + '</td><td></td>';
+      const td = tr.querySelector('td:last-child');
+      const viewBtn = document.createElement('button');
+      viewBtn.className = 'pill secondary btn-sm';
+      viewBtn.textContent = 'View submissions';
+      viewBtn.onclick = () => showSubmissions(uid, u.name || u.email);
+      td.appendChild(viewBtn);
+      rosterBody.appendChild(tr);
+    }
+  });
+
+  document.getElementById('pending-count').textContent = pendingCount;
+  document.getElementById('roster-count').textContent = approvedCount;
+  document.getElementById('no-pending').style.display = pendingCount ? 'none' : '';
+}
+
+auth.onAuthStateChanged(async (user) => {
+  document.getElementById('signed-out').style.display = 'none';
+  document.getElementById('not-authorized').style.display = 'none';
+  document.getElementById('admin-content').style.display = 'none';
+  if (!user) {
+    document.getElementById('signed-out').style.display = '';
+    return;
+  }
+  if (user.email !== ADMIN_EMAIL) {
+    document.getElementById('not-authorized').style.display = '';
+    return;
+  }
+  document.getElementById('admin-content').style.display = '';
+  await loadDashboard();
+});
+</script>
+</body>
+</html>
