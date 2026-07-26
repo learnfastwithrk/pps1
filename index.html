@@ -2248,9 +2248,17 @@ auth.onAuthStateChanged(async (user) => {
   }
 });
 
-document.getElementById('signin-btn').addEventListener('click', () => {
+document.getElementById('signin-btn').addEventListener('click', async () => {
   const provider = new firebase.auth.GoogleAuthProvider();
-  auth.signInWithRedirect(provider).catch(err => alert('Sign-in failed: ' + err.message));
+  try {
+    await auth.signInWithPopup(provider);
+  } catch (err) {
+    if (err.code === 'auth/popup-blocked' || err.code === 'auth/popup-closed-by-user' || err.code === 'auth/cancelled-popup-request') {
+      auth.signInWithRedirect(provider).catch(e2 => alert('Sign-in failed: ' + e2.message));
+    } else {
+      alert('Sign-in failed: ' + err.message);
+    }
+  }
 });
 document.getElementById('signout-btn').addEventListener('click', () => auth.signOut());
 auth.getRedirectResult().catch(err => console.error('redirect sign-in error', err));
