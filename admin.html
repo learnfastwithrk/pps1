@@ -79,7 +79,7 @@
     </div>
     <div class="card">
       <h2>👥 Roster (<span id="roster-count">0</span> approved)</h2>
-      <table id="roster-table"><thead><tr><th>Name</th><th>Email</th><th>Sessions done</th><th>Submissions</th><th></th></tr></thead><tbody></tbody></table>
+      <table id="roster-table"><thead><tr><th>Name</th><th>Email</th><th>Sessions done</th><th>Submissions</th><th>Points</th><th>Streak</th><th></th></tr></thead><tbody></tbody></table>
     </div>
   </div>
 </main>
@@ -203,7 +203,7 @@ async function loadDashboard(){
       const tr = document.createElement('tr');
       tr.innerHTML = '<td>' + (u.name || '—') + '</td><td>' + (u.email || '—') + '</td>' +
         '<td><span class="bar-outer"><span class="bar-inner" style="width:' + pct + '%"></span></span>' + done + ' / ' + TOTAL_SESSIONS + '</td>' +
-        '<td>' + subs + '</td><td></td>';
+        '<td>' + subs + '</td><td>' + (u.points || 0) + '</td><td>' + (u.currentStreak || 0) + ' 🔥 (best ' + (u.longestStreak || 0) + ')</td><td></td>';
       const td = tr.querySelector('td:last-child');
       const viewBtn = document.createElement('button');
       viewBtn.className = 'pill secondary btn-sm';

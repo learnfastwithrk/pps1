@@ -57,6 +57,24 @@
   .progress-bar-inner{ height:100%; width:0%; background: linear-gradient(90deg, var(--teal), var(--purple)); transition: width .4s ease;}
   .progress-label{ font-size:13px; color:var(--muted); margin-top:6px;}
 
+  .dashboard{ max-width:720px; margin:0 auto 24px; }
+  .dash-stats{ display:flex; gap:14px; justify-content:center; flex-wrap:wrap; margin-bottom:16px; }
+  .dash-stat{
+    background: var(--card); border:1px solid var(--border); border-radius:16px;
+    padding:16px 22px; min-width:110px; text-align:center;
+  }
+  .dash-stat-value{ font-size:28px; font-weight:800; background: linear-gradient(90deg, var(--purple), var(--accent3));
+    -webkit-background-clip:text; background-clip:text; color:transparent; }
+  .dash-stat-label{ font-size:12px; color:var(--muted); margin-top:4px; font-weight:600; }
+  .tip-banner{
+    background: rgba(127,90,240,0.12); border:1px solid rgba(127,90,240,0.35); border-radius:12px;
+    padding:12px 18px; font-size:13.5px; line-height:1.5; margin-bottom:12px; text-align:left;
+  }
+  .challenger-banner{
+    background: rgba(255,137,6,0.14); border:1px solid rgba(255,137,6,0.4); border-radius:12px;
+    padding:12px 18px; font-size:13.5px; line-height:1.5; font-weight:600; text-align:left;
+  }
+
   main{ max-width: 880px; margin: 0 auto; padding: 32px 20px 100px;}
 
   details.experiment{
@@ -183,13 +201,25 @@
   </div>
 </div>
 <div class="hero">
-  <h1>PPS-1 Guide 🎮</h1>
-  <p>Programming for Problem Solving – 1, but make it make sense. Same 15 experiments, same 45 sessions — rebuilt with analogies that don't put you to sleep, discussion prompts for your study group, and quizzes you can actually click through.</p>
-  <div class="badges">
-    <span class="badge">15 Experiments</span>
-    <span class="badge">45 Sessions</span>
-    <span class="badge">135+ Solved Problems</span>
-    <span class="badge">Companion to the full lab manual</span>
+  <h1>PPS-1 Survival Guide 🎮</h1>
+  <div id="hero-marketing">
+    <p>Programming for Problem Solving – 1, but make it make sense. Same 15 experiments, same 45 sessions — rebuilt with analogies that don't put you to sleep, discussion prompts for your study group, and quizzes you can actually click through.</p>
+    <div class="badges">
+      <span class="badge">15 Experiments</span>
+      <span class="badge">45 Sessions</span>
+      <span class="badge">135+ Solved Problems</span>
+      <span class="badge">Companion to the full lab manual</span>
+    </div>
+  </div>
+  <div class="dashboard" id="dashboard" style="display:none;">
+    <div class="dash-stats">
+      <div class="dash-stat"><div class="dash-stat-value" id="dash-streak">0</div><div class="dash-stat-label">🔥 Day streak</div></div>
+      <div class="dash-stat"><div class="dash-stat-value" id="dash-longest">0</div><div class="dash-stat-label">🏆 Best streak</div></div>
+      <div class="dash-stat"><div class="dash-stat-value" id="dash-points">0</div><div class="dash-stat-label">⭐ Points</div></div>
+      <div class="dash-stat"><div class="dash-stat-value" id="dash-rank">—</div><div class="dash-stat-label">📊 Class rank</div></div>
+    </div>
+    <div class="tip-banner" id="tip-banner">💡 <span id="tip-text"></span></div>
+    <div class="challenger-banner" id="challenger-banner"></div>
   </div>
   <div class="top-controls">
     <button class="pill" id="theme-toggle">🌙 Dark / ☀️ Light</button>
@@ -2105,6 +2135,92 @@ const db = firebase.firestore();
 
 let currentUser = null;
 let currentStatus = null; // 'pending' | 'approved' | 'rejected' | null
+let userDoc = null; // cached users/{uid} doc data (points, streak, lastActiveDate, name)
+const submittedSids = new Set();
+const quizAttemptedSids = new Set();
+const TIPS = ["Sessions with a completed quiz stick better in your memory than ones you just read — try the Quick Quiz before you move on.","Streaks reset if you miss a full day — even marking one session done keeps it alive.","Submitting your case study early means you can revisit and improve it before it's due.","Re-reading 'The Vibe' analogy out loud to a friend is a fast way to check you actually understood it.","Points here are for motivation, not grades — the real record is what you submit and complete.","Stuck on an assignment problem? Re-read the Code Challenge solution above it — most assignment problems reuse the same idea.","Try explaining a session's core idea in one sentence before opening 'Tap to reveal the solution'.","The fastest way to climb the rank board: finish one full experiment (3 sessions) in a single sitting.","Come back daily, even for 10 minutes — consistency beats marathon cramming for building real understanding.","Check the admin-reviewed feedback on your submissions (ask your instructor) to improve your next one."];
+let tipTimer = null;
+
+function todayStr(){
+  const d = new Date();
+  return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+}
+function daysBetween(a, b){
+  const da = new Date(a + 'T00:00:00');
+  const db = new Date(b + 'T00:00:00');
+  return Math.round((db - da) / 86400000);
+}
+
+function computePoints(){
+  const done = document.querySelectorAll('.done-check:checked').length;
+  return done * 10 + submittedSids.size * 25 + quizAttemptedSids.size * 5;
+}
+
+async function touchStreakAndPoints(){
+  if (!currentUser || currentStatus !== 'approved' || !userDoc) return;
+  const today = todayStr();
+  let { currentStreak = 0, longestStreak = 0, lastActiveDate = null } = userDoc;
+  if (lastActiveDate !== today) {
+    if (lastActiveDate && daysBetween(lastActiveDate, today) === 1) {
+      currentStreak = currentStreak + 1;
+    } else {
+      currentStreak = 1;
+    }
+    longestStreak = Math.max(longestStreak, currentStreak);
+    lastActiveDate = today;
+  }
+  const points = computePoints();
+  userDoc.currentStreak = currentStreak;
+  userDoc.longestStreak = longestStreak;
+  userDoc.lastActiveDate = lastActiveDate;
+  userDoc.points = points;
+  try {
+    await db.collection('users').doc(currentUser.uid).update({ currentStreak, longestStreak, lastActiveDate, points });
+    await db.collection('leaderboard').doc(currentUser.uid).set({ name: currentUser.displayName || currentUser.email, points }, { merge: true });
+  } catch (err) { console.error('streak/points sync failed', err); }
+  renderDashboardStats();
+  await renderRankAndChallenger();
+}
+
+function renderDashboardStats(){
+  if (!userDoc) return;
+  document.getElementById('dash-streak').textContent = userDoc.currentStreak || 0;
+  document.getElementById('dash-longest').textContent = userDoc.longestStreak || 0;
+  document.getElementById('dash-points').textContent = userDoc.points || 0;
+}
+
+async function renderRankAndChallenger(){
+  if (!currentUser || currentStatus !== 'approved') return;
+  try {
+    const snap = await db.collection('leaderboard').get();
+    const rows = [];
+    snap.forEach(doc => rows.push({ uid: doc.id, name: doc.data().name || 'Someone', points: doc.data().points || 0 }));
+    rows.sort((a, b) => b.points - a.points);
+    const myIdx = rows.findIndex(r => r.uid === currentUser.uid);
+    const rankEl = document.getElementById('dash-rank');
+    const bannerEl = document.getElementById('challenger-banner');
+    if (myIdx === -1) { rankEl.textContent = '—'; bannerEl.textContent = ''; return; }
+    rankEl.textContent = '#' + (myIdx + 1) + ' / ' + rows.length;
+    if (myIdx === 0) {
+      bannerEl.textContent = rows.length > 1 ? '👑 You\'re #1 in the class! Keep your streak alive to stay on top.' : '👑 You\'re on the board — invite a classmate to make it a real race!';
+    } else {
+      const ahead = rows[myIdx - 1];
+      const gap = ahead.points - rows[myIdx].points;
+      bannerEl.textContent = '🎯 Beat ' + ahead.name + ' (' + ahead.points + ' pts) — just ' + gap + ' more point' + (gap === 1 ? '' : 's') + ' to move up to rank #' + myIdx + '!';
+    }
+  } catch (err) { console.error('leaderboard read failed', err); }
+}
+
+function startTipRotation(){
+  const tipEl = document.getElementById('tip-text');
+  let i = Math.floor(Math.random() * TIPS.length);
+  tipEl.textContent = TIPS[i];
+  if (tipTimer) clearInterval(tipTimer);
+  tipTimer = setInterval(() => {
+    i = (i + 1) % TIPS.length;
+    tipEl.textContent = TIPS[i];
+  }, 8000);
+}
 
 function updateProgress(){
   const checked = document.querySelectorAll('.done-check:checked').length;
@@ -2141,6 +2257,7 @@ function wireCheckboxes(){
         db.collection('users').doc(currentUser.uid).collection('progress').doc(sid)
           .set({ done: cb.checked, updatedAt: firebase.firestore.FieldValue.serverTimestamp() }, { merge: true })
           .catch(err => console.error('progress sync failed', err));
+        touchStreakAndPoints();
       } else {
         localStorage.setItem('ppsgz_' + sid, cb.checked ? '1' : '0');
       }
@@ -2164,6 +2281,8 @@ function wireSubmissions(){
         }, { merge: true });
         const now = new Date();
         statusEl.textContent = '✓ Submitted at ' + now.toLocaleTimeString();
+        submittedSids.add(sid);
+        touchStreakAndPoints();
       } catch (err) {
         console.error(err);
         statusEl.textContent = 'Failed to save — try again.';
@@ -2175,46 +2294,77 @@ function wireSubmissions(){
 
 async function loadUserData(uid){
   const progressSnap = await db.collection('users').doc(uid).collection('progress').get();
+  quizAttemptedSids.clear();
   progressSnap.forEach(doc => {
     const sid = doc.id;
+    const d = doc.data();
     const cb = document.querySelector('.done-check[data-sid="' + sid + '"]');
     if (cb) {
-      cb.checked = !!doc.data().done;
+      cb.checked = !!d.done;
       const card = document.getElementById(sid);
       if (card) card.classList.toggle('completed', cb.checked);
     }
+    if (d.quizAttempted) {
+      quizAttemptedSids.add(sid);
+      const group = document.querySelectorAll('#' + sid + ' .quiz-options');
+      group.forEach(g => {
+        if (!g.classList.contains('answered')) {
+          g.classList.add('answered');
+          const correctIdx = parseInt(g.dataset.correct, 10);
+          g.querySelectorAll('.quiz-opt').forEach((b, i) => { b.disabled = true; if (i === correctIdx) b.classList.add('correct'); });
+        }
+      });
+    }
   });
   const subSnap = await db.collection('users').doc(uid).collection('submissions').get();
+  submittedSids.clear();
   subSnap.forEach(doc => {
     const sid = doc.id;
     const ta = document.getElementById('submit-text-' + sid);
     if (ta) ta.value = doc.data().text || '';
+    submittedSids.add(sid);
+    const statusEl = document.getElementById('submit-status-' + sid);
+    if (statusEl) statusEl.textContent = '✓ Submitted';
   });
   updateProgress();
+  renderDashboardStats();
+  await renderRankAndChallenger();
 }
 
 async function ensureUserDoc(user){
   const ref = db.collection('users').doc(user.uid);
   const snap = await ref.get();
   if (!snap.exists) {
-    await ref.set({
+    const data = {
       email: user.email,
       name: user.displayName,
       photoURL: user.photoURL,
       status: 'pending',
+      currentStreak: 0,
+      longestStreak: 0,
+      lastActiveDate: null,
+      points: 0,
       createdAt: firebase.firestore.FieldValue.serverTimestamp()
-    });
+    };
+    await ref.set(data);
+    userDoc = data;
     return 'pending';
   }
-  return snap.data().status || 'pending';
+  userDoc = snap.data();
+  return userDoc.status || 'pending';
 }
 
 function renderAuthUI(){
   const signedOut = document.getElementById('auth-signed-out');
   const signedIn = document.getElementById('auth-signed-in');
+  const marketing = document.getElementById('hero-marketing');
+  const dashboard = document.getElementById('dashboard');
   if (!currentUser) {
     signedOut.style.display = '';
     signedIn.style.display = 'none';
+    marketing.style.display = '';
+    dashboard.style.display = 'none';
+    if (tipTimer) clearInterval(tipTimer);
     setInteractiveEnabled(false);
     return;
   }
@@ -2229,6 +2379,17 @@ function renderAuthUI(){
   statusEl.textContent = currentStatus === 'approved' ? '✓ Approved' : currentStatus === 'pending' ? '⏳ Pending approval' : '✕ Access denied';
   document.getElementById('admin-link').style.display = (currentUser.email === ADMIN_EMAIL) ? '' : 'none';
   setInteractiveEnabled(currentStatus === 'approved');
+
+  if (currentStatus === 'approved') {
+    marketing.style.display = 'none';
+    dashboard.style.display = '';
+    renderDashboardStats();
+    startTipRotation();
+  } else {
+    marketing.style.display = '';
+    dashboard.style.display = 'none';
+    if (tipTimer) clearInterval(tipTimer);
+  }
 }
 
 auth.onAuthStateChanged(async (user) => {
@@ -2275,6 +2436,17 @@ function handleQuizClick(btn){
   });
   if (parseInt(btn.dataset.idx, 10) !== correctIdx) {
     btn.classList.add('incorrect');
+  }
+  const card = group.closest('.session-card');
+  if (card && currentUser && currentStatus === 'approved') {
+    const sid = card.id;
+    if (!quizAttemptedSids.has(sid)) {
+      quizAttemptedSids.add(sid);
+      db.collection('users').doc(currentUser.uid).collection('progress').doc(sid)
+        .set({ quizAttempted: true, updatedAt: firebase.firestore.FieldValue.serverTimestamp() }, { merge: true })
+        .catch(err => console.error('quiz progress sync failed', err));
+      touchStreakAndPoints();
+    }
   }
 }
 
