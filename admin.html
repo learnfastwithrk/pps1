@@ -113,9 +113,10 @@ const db = firebase.firestore();
 
 document.getElementById('signin-btn').addEventListener('click', () => {
   const provider = new firebase.auth.GoogleAuthProvider();
-  auth.signInWithPopup(provider).catch(err => alert('Sign-in failed: ' + err.message));
+  auth.signInWithRedirect(provider).catch(err => alert('Sign-in failed: ' + err.message));
 });
 document.getElementById('signout-btn-2').addEventListener('click', () => auth.signOut());
+auth.getRedirectResult().catch(err => console.error('redirect sign-in error', err));
 document.getElementById('close-modal').addEventListener('click', () => {
   document.getElementById('sub-modal-bg').style.display = 'none';
 });

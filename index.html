@@ -2250,9 +2250,10 @@ auth.onAuthStateChanged(async (user) => {
 
 document.getElementById('signin-btn').addEventListener('click', () => {
   const provider = new firebase.auth.GoogleAuthProvider();
-  auth.signInWithPopup(provider).catch(err => alert('Sign-in failed: ' + err.message));
+  auth.signInWithRedirect(provider).catch(err => alert('Sign-in failed: ' + err.message));
 });
 document.getElementById('signout-btn').addEventListener('click', () => auth.signOut());
+auth.getRedirectResult().catch(err => console.error('redirect sign-in error', err));
 
 function handleQuizClick(btn){
   const group = btn.parentElement;
