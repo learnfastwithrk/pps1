@@ -77,19 +77,14 @@
 
   main{ max-width: 880px; margin: 0 auto; padding: 32px 20px 100px;}
 
-  details.experiment{
+  .exp-block{
     background: var(--card); border:1px solid var(--border); border-radius:18px;
     margin-bottom:18px; overflow:hidden;
   }
-  details.experiment > summary{
-    list-style:none; cursor:pointer; padding:18px 22px; display:flex; align-items:center; gap:14px;
-    flex-wrap:wrap;
+  .exp-header{
+    cursor:default; padding:18px 22px; display:flex; align-items:center; gap:14px;
+    flex-wrap:wrap; border-bottom:1px solid var(--border);
   }
-  details.experiment > summary::-webkit-details-marker{ display:none; }
-  details.experiment > summary::before{
-    content:"▸"; display:inline-block; transition: transform .2s; color:var(--accent); font-size:18px;
-  }
-  details.experiment[open] > summary::before{ transform: rotate(90deg); }
   .exp-num{
     background: linear-gradient(135deg, var(--purple), var(--accent3));
     color:white; font-weight:700; font-size:13px; padding:4px 12px; border-radius:999px; flex-shrink:0;
@@ -204,6 +199,61 @@
     box-shadow: 0 8px 24px rgba(127,90,240,0.45);
   }
 
+  .content-col{ transition: margin-left .2s ease; }
+  body.has-sidenav .content-col{ margin-left:280px; }
+  @media (max-width: 900px){
+    body.has-sidenav .content-col{ margin-left:0; }
+    .side-nav{ width:100% !important; position:relative !important; height:auto !important; border-right:none; border-bottom:1px solid var(--border); }
+  }
+
+  .side-nav{
+    position:fixed; top:0; left:0; bottom:0; width:280px; z-index:35; overflow-y:auto;
+    background:var(--card); border-right:1px solid var(--border); padding:16px 14px 40px;
+  }
+  .side-nav-head{ display:flex; align-items:center; justify-content:space-between; font-weight:700; font-size:14px; margin-bottom:14px; }
+  .btn-tiny{ font-size:11px; padding:4px 10px; }
+  .sn-exp{ margin-bottom:14px; }
+  .sn-exp-title{ font-size:11.5px; font-weight:700; text-transform:uppercase; letter-spacing:.03em; color:var(--muted); margin-bottom:6px; }
+  .sn-session{ border-radius:10px; margin-bottom:4px; }
+  .sn-session-head{ display:flex; align-items:center; gap:8px; padding:8px 10px; border-radius:10px; cursor:pointer; font-size:13px; }
+  .sn-session-head:hover{ background: var(--bg2); }
+  .sn-session.active .sn-session-head{ background: rgba(127,90,240,0.18); font-weight:700; }
+  .sn-session.done .sn-icon{ color:var(--teal); }
+  .sn-session.locked .sn-session-head{ color:var(--muted); cursor:not-allowed; }
+  .sn-session.locked:hover .sn-session-head{ background:none; }
+  .sn-icon{ flex-shrink:0; font-size:13px; }
+  .sn-label{ line-height:1.3; }
+  .sn-subitems{ display:flex; flex-direction:column; gap:4px; padding:4px 10px 8px 34px; }
+  .sn-subitems button{
+    font-family:inherit; text-align:left; cursor:pointer; border:1px solid var(--border); background:var(--bg2);
+    color:var(--text); border-radius:8px; padding:6px 10px; font-size:12.5px;
+  }
+  .sn-subitems button:hover{ border-color:var(--purple); }
+
+  .overlay-screen{
+    position:fixed; inset:0; z-index:60; display:flex; align-items:center; justify-content:center;
+    background: radial-gradient(circle at 20% 20%, rgba(127,90,240,0.35), transparent 55%),
+                radial-gradient(circle at 80% 0%, rgba(255,137,6,0.28), transparent 50%), var(--bg);
+    padding:20px;
+  }
+  .overlay-card{
+    background: var(--card); border:1px solid var(--border); border-radius:22px; padding:40px 34px;
+    max-width:520px; width:100%; text-align:center;
+  }
+  .overlay-icon{ font-size:40px; margin-bottom:6px; }
+  .overlay-card h2{ margin:0 0 10px; font-size:24px; }
+  .overlay-card p{ color:var(--muted); font-size:15px; line-height:1.6; margin:0 0 22px; }
+  .overlay-card .pill{ margin:4px 6px; }
+  .gate-browse-link{ margin-top:16px; font-size:12.5px; }
+  .gate-browse-link a{ color:var(--muted); text-decoration:underline; cursor:pointer; }
+  .checkpoint-board{ background:var(--bg2); border:1px solid var(--border); border-radius:14px; padding:14px 16px; margin-bottom:22px; text-align:left; }
+  .board-title{ font-weight:700; font-size:13px; margin-bottom:10px; }
+  .board-row{ display:flex; align-items:center; gap:10px; padding:6px 0; font-size:13.5px; border-bottom:1px solid var(--border); }
+  .board-row:last-child{ border-bottom:none; }
+  .board-rank{ font-weight:700; color:var(--purple); width:28px; flex-shrink:0; }
+  .board-name{ flex:1; }
+  .board-pts{ color:var(--muted); font-weight:600; }
+
   footer{ text-align:center; padding: 30px 20px 50px; color:var(--muted); font-size:13px;}
 
   @media (max-width: 600px){
@@ -223,6 +273,36 @@
     <button class="pill secondary" id="signout-btn">Sign out</button>
   </div>
 </div>
+<div class="side-nav" id="side-nav" style="display:none;">
+  <div class="side-nav-head">
+    <span>📚 Sessions</span>
+    <button class="pill secondary btn-tiny" id="browse-all-btn">Browse all</button>
+  </div>
+  <div id="side-nav-list"></div>
+</div>
+
+<div class="overlay-screen" id="gate-screen" style="display:none;">
+  <div class="overlay-card">
+    <div class="overlay-icon" id="gate-icon">👋</div>
+    <h2 id="gate-title">Welcome!</h2>
+    <p id="gate-sub"></p>
+    <button class="pill" id="gate-primary-btn">Start Session 1</button>
+    <button class="pill secondary" id="gate-restart-btn" style="display:none;">Start over from Session 1</button>
+    <div class="gate-browse-link"><a href="#" id="gate-browse-link">Prefer to browse everything freely instead?</a></div>
+  </div>
+</div>
+
+<div class="overlay-screen" id="checkpoint-screen" style="display:none;">
+  <div class="overlay-card">
+    <div class="overlay-icon">🎉</div>
+    <h2 id="checkpoint-title">Experiment complete!</h2>
+    <p id="checkpoint-motivation"></p>
+    <div class="checkpoint-board" id="checkpoint-board"></div>
+    <button class="pill" id="checkpoint-continue-btn">Continue →</button>
+  </div>
+</div>
+
+<div class="content-col" id="content-col">
 <div class="hero">
   <h1>PPS-1 Survival Guide 🎮</h1>
   <div id="hero-marketing">
@@ -244,10 +324,8 @@
     <div class="tip-banner" id="tip-banner">💡 <span id="tip-text"></span></div>
     <div class="challenger-banner" id="challenger-banner"></div>
   </div>
-  <div class="top-controls">
+  <div class="top-controls" id="top-controls">
     <button class="pill" id="theme-toggle">🌙 Dark / ☀️ Light</button>
-    <button class="pill secondary" id="expand-all">Expand All</button>
-    <button class="pill secondary" id="collapse-all">Collapse All</button>
   </div>
   <div class="progress-wrap">
     <div class="progress-bar-outer"><div class="progress-bar-inner" id="progress-bar"></div></div>
@@ -274,12 +352,12 @@
 </div>
 
 <main>
-<details class="experiment" data-exp="1" id="exp-1">
-    <summary>
+<div class="exp-block" data-exp="1" id="exp-1">
+    <div class="exp-header">
       <span class="exp-num">Exp 1</span>
       <span class="exp-title">Basic Components of a Computer, Von Neumann Architecture, Number Systems, and Data Representation</span>
       <span class="exp-co">CO1</span>
-    </summary>
+    </div>
     <div class="experiment-body"><div class="session-card" id="sess-0-0"><div class="session-head">
     <label class="done-toggle">
       <input type="checkbox" class="done-check" data-sid="sess-0-0">
@@ -378,13 +456,13 @@ Storage check: a 4x4 grayscale image has 16 pixels x 8 bits/pixel = 128 bits = 1
         <button class="pill submit-btn" id="submit-btn-sess-0-2" data-sid="sess-0-2" disabled>Submit</button>
         <span class="submit-status" id="submit-status-sess-0-2"></span>
       </div>
-    </div></div></div></div></details>
-<details class="experiment" data-exp="2" id="exp-2">
-    <summary>
+    </div></div></div></div></div>
+<div class="exp-block" data-exp="2" id="exp-2">
+    <div class="exp-header">
       <span class="exp-num">Exp 2</span>
       <span class="exp-title">Flowcharts, Pseudocode, and Problem-Solving</span>
       <span class="exp-co">CO2</span>
-    </summary>
+    </div>
     <div class="experiment-body"><div class="session-card" id="sess-1-0"><div class="session-head">
     <label class="done-toggle">
       <input type="checkbox" class="done-check" data-sid="sess-1-0">
@@ -500,13 +578,13 @@ int main(){
         <button class="pill submit-btn" id="submit-btn-sess-1-2" data-sid="sess-1-2" disabled>Submit</button>
         <span class="submit-status" id="submit-status-sess-1-2"></span>
       </div>
-    </div></div></div></div></details>
-<details class="experiment" data-exp="3" id="exp-3">
-    <summary>
+    </div></div></div></div></div>
+<div class="exp-block" data-exp="3" id="exp-3">
+    <div class="exp-header">
       <span class="exp-num">Exp 3</span>
       <span class="exp-title">Variables, Data Types, Operators, and Expressions</span>
       <span class="exp-co">CO3</span>
-    </summary>
+    </div>
     <div class="experiment-body"><div class="session-card" id="sess-2-0"><div class="session-head">
     <label class="done-toggle">
       <input type="checkbox" class="done-check" data-sid="sess-2-0">
@@ -620,13 +698,13 @@ Larger value = 7</pre></div></details></div><div class="callout assign"><div cla
         <button class="pill submit-btn" id="submit-btn-sess-2-2" data-sid="sess-2-2" disabled>Submit</button>
         <span class="submit-status" id="submit-status-sess-2-2"></span>
       </div>
-    </div></div></div></div></details>
-<details class="experiment" data-exp="4" id="exp-4">
-    <summary>
+    </div></div></div></div></div>
+<div class="exp-block" data-exp="4" id="exp-4">
+    <div class="exp-header">
       <span class="exp-num">Exp 4</span>
       <span class="exp-title">Selection Statements, Switch, and Top-Down Design</span>
       <span class="exp-co">CO2 · CO3</span>
-    </summary>
+    </div>
     <div class="experiment-body"><div class="session-card" id="sess-3-0"><div class="session-head">
     <label class="done-toggle">
       <input type="checkbox" class="done-check" data-sid="sess-3-0">
@@ -749,13 +827,13 @@ int main(){
         <button class="pill submit-btn" id="submit-btn-sess-3-2" data-sid="sess-3-2" disabled>Submit</button>
         <span class="submit-status" id="submit-status-sess-3-2"></span>
       </div>
-    </div></div></div></div></details>
-<details class="experiment" data-exp="5" id="exp-5">
-    <summary>
+    </div></div></div></div></div>
+<div class="exp-block" data-exp="5" id="exp-5">
+    <div class="exp-header">
       <span class="exp-num">Exp 5</span>
       <span class="exp-title">Implementation of Algorithms and Functions</span>
       <span class="exp-co">CO3 · CO4</span>
-    </summary>
+    </div>
     <div class="experiment-body"><div class="session-card" id="sess-4-0"><div class="session-head">
     <label class="done-toggle">
       <input type="checkbox" class="done-check" data-sid="sess-4-0">
@@ -879,13 +957,13 @@ Running total = 30</pre></div></details></div><div class="callout assign"><div c
         <button class="pill submit-btn" id="submit-btn-sess-4-2" data-sid="sess-4-2" disabled>Submit</button>
         <span class="submit-status" id="submit-status-sess-4-2"></span>
       </div>
-    </div></div></div></div></details>
-<details class="experiment" data-exp="6" id="exp-6">
-    <summary>
+    </div></div></div></div></div>
+<div class="exp-block" data-exp="6" id="exp-6">
+    <div class="exp-header">
       <span class="exp-num">Exp 6</span>
       <span class="exp-title">Scope Rules, Header Files, and Storage Classes</span>
       <span class="exp-co">CO3</span>
-    </summary>
+    </div>
     <div class="experiment-body"><div class="session-card" id="sess-5-0"><div class="session-head">
     <label class="done-toggle">
       <input type="checkbox" class="done-check" data-sid="sess-5-0">
@@ -1008,13 +1086,13 @@ static=3 automatic=1</pre></div></details></div><div class="callout assign"><div
         <button class="pill submit-btn" id="submit-btn-sess-5-2" data-sid="sess-5-2" disabled>Submit</button>
         <span class="submit-status" id="submit-status-sess-5-2"></span>
       </div>
-    </div></div></div></div></details>
-<details class="experiment" data-exp="7" id="exp-7">
-    <summary>
+    </div></div></div></div></div>
+<div class="exp-block" data-exp="7" id="exp-7">
+    <div class="exp-header">
       <span class="exp-num">Exp 7</span>
       <span class="exp-title">Input/Output and Library Functions</span>
       <span class="exp-co">CO3</span>
-    </summary>
+    </div>
     <div class="experiment-body"><div class="session-card" id="sess-6-0"><div class="session-head">
     <label class="done-toggle">
       <input type="checkbox" class="done-check" data-sid="sess-6-0">
@@ -1128,13 +1206,13 @@ atoi("245") = 245</pre></div></details></div><div class="callout assign"><div cl
         <button class="pill submit-btn" id="submit-btn-sess-6-2" data-sid="sess-6-2" disabled>Submit</button>
         <span class="submit-status" id="submit-status-sess-6-2"></span>
       </div>
-    </div></div></div></div></details>
-<details class="experiment" data-exp="8" id="exp-8">
-    <summary>
+    </div></div></div></div></div>
+<div class="exp-block" data-exp="8" id="exp-8">
+    <div class="exp-header">
       <span class="exp-num">Exp 8</span>
       <span class="exp-title">Recursion and the C Preprocessor</span>
       <span class="exp-co">CO3</span>
-    </summary>
+    </div>
     <div class="experiment-body"><div class="session-card" id="sess-7-0"><div class="session-head">
     <label class="done-toggle">
       <input type="checkbox" class="done-check" data-sid="sess-7-0">
@@ -1252,13 +1330,13 @@ Result = 42
         <button class="pill submit-btn" id="submit-btn-sess-7-2" data-sid="sess-7-2" disabled>Submit</button>
         <span class="submit-status" id="submit-status-sess-7-2"></span>
       </div>
-    </div></div></div></div></details>
-<details class="experiment" data-exp="9" id="exp-9">
-    <summary>
+    </div></div></div></div></div>
+<div class="exp-block" data-exp="9" id="exp-9">
+    <div class="exp-header">
       <span class="exp-num">Exp 9</span>
       <span class="exp-title">Pointers and Arrays</span>
       <span class="exp-co">CO3</span>
-    </summary>
+    </div>
     <div class="experiment-body"><div class="session-card" id="sess-8-0"><div class="session-head">
     <label class="done-toggle">
       <input type="checkbox" class="done-check" data-sid="sess-8-0">
@@ -1370,13 +1448,13 @@ int main(){
         <button class="pill submit-btn" id="submit-btn-sess-8-2" data-sid="sess-8-2" disabled>Submit</button>
         <span class="submit-status" id="submit-status-sess-8-2"></span>
       </div>
-    </div></div></div></div></details>
-<details class="experiment" data-exp="10" id="exp-10">
-    <summary>
+    </div></div></div></div></div>
+<div class="exp-block" data-exp="10" id="exp-10">
+    <div class="exp-header">
       <span class="exp-num">Exp 10</span>
       <span class="exp-title">Advanced Arrays and Function Pointers</span>
       <span class="exp-co">CO3</span>
-    </summary>
+    </div>
     <div class="experiment-body"><div class="session-card" id="sess-9-0"><div class="session-head">
     <label class="done-toggle">
       <input type="checkbox" class="done-check" data-sid="sess-9-0">
@@ -1494,13 +1572,13 @@ mul(8, 3) = 24</pre></div></details></div><div class="callout assign"><div class
         <button class="pill submit-btn" id="submit-btn-sess-9-2" data-sid="sess-9-2" disabled>Submit</button>
         <span class="submit-status" id="submit-status-sess-9-2"></span>
       </div>
-    </div></div></div></div></details>
-<details class="experiment" data-exp="11" id="exp-11">
-    <summary>
+    </div></div></div></div></div>
+<div class="exp-block" data-exp="11" id="exp-11">
+    <div class="exp-header">
       <span class="exp-num">Exp 11</span>
       <span class="exp-title">Structures</span>
       <span class="exp-co">CO3</span>
-    </summary>
+    </div>
     <div class="experiment-body"><div class="session-card" id="sess-10-0"><div class="session-head">
     <label class="done-toggle">
       <input type="checkbox" class="done-check" data-sid="sess-10-0">
@@ -1615,13 +1693,13 @@ After : 65.00</pre></div></details></div><div class="callout assign"><div class=
         <button class="pill submit-btn" id="submit-btn-sess-10-2" data-sid="sess-10-2" disabled>Submit</button>
         <span class="submit-status" id="submit-status-sess-10-2"></span>
       </div>
-    </div></div></div></div></details>
-<details class="experiment" data-exp="12" id="exp-12">
-    <summary>
+    </div></div></div></div></div>
+<div class="exp-block" data-exp="12" id="exp-12">
+    <div class="exp-header">
       <span class="exp-num">Exp 12</span>
       <span class="exp-title">Table Lookup, typedef, Unions, and Bit-Fields</span>
       <span class="exp-co">CO3</span>
-    </summary>
+    </div>
     <div class="experiment-body"><div class="session-card" id="sess-11-0"><div class="session-head">
     <label class="done-toggle">
       <input type="checkbox" class="done-check" data-sid="sess-11-0">
@@ -1732,13 +1810,13 @@ Size of Permissions = 4 byte(s)</pre></div></details></div><div class="callout a
         <button class="pill submit-btn" id="submit-btn-sess-11-2" data-sid="sess-11-2" disabled>Submit</button>
         <span class="submit-status" id="submit-status-sess-11-2"></span>
       </div>
-    </div></div></div></div></details>
-<details class="experiment" data-exp="13" id="exp-13">
-    <summary>
+    </div></div></div></div></div>
+<div class="exp-block" data-exp="13" id="exp-13">
+    <div class="exp-header">
       <span class="exp-num">Exp 13</span>
       <span class="exp-title">Basics of AI-Assisted Coding</span>
       <span class="exp-co">CO5</span>
-    </summary>
+    </div>
     <div class="experiment-body"><div class="session-card" id="sess-12-0"><div class="session-head">
     <label class="done-toggle">
       <input type="checkbox" class="done-check" data-sid="sess-12-0">
@@ -1852,13 +1930,13 @@ int main(){
         <button class="pill submit-btn" id="submit-btn-sess-12-2" data-sid="sess-12-2" disabled>Submit</button>
         <span class="submit-status" id="submit-status-sess-12-2"></span>
       </div>
-    </div></div></div></div></details>
-<details class="experiment" data-exp="14" id="exp-14">
-    <summary>
+    </div></div></div></div></div>
+<div class="exp-block" data-exp="14" id="exp-14">
+    <div class="exp-header">
       <span class="exp-num">Exp 14</span>
       <span class="exp-title">Code Comprehension Using AI-Generated Code</span>
       <span class="exp-co">CO4 · CO5</span>
-    </summary>
+    </div>
     <div class="experiment-body"><div class="session-card" id="sess-13-0"><div class="session-head">
     <label class="done-toggle">
       <input type="checkbox" class="done-check" data-sid="sess-13-0">
@@ -1982,13 +2060,13 @@ int main(){
         <button class="pill submit-btn" id="submit-btn-sess-13-2" data-sid="sess-13-2" disabled>Submit</button>
         <span class="submit-status" id="submit-status-sess-13-2"></span>
       </div>
-    </div></div></div></div></details>
-<details class="experiment" data-exp="15" id="exp-15">
-    <summary>
+    </div></div></div></div></div>
+<div class="exp-block" data-exp="15" id="exp-15">
+    <div class="exp-header">
       <span class="exp-num">Exp 15</span>
       <span class="exp-title">Mini Project</span>
       <span class="exp-co">CO2 · CO3 · CO4</span>
-    </summary>
+    </div>
     <div class="experiment-body"><div class="session-card" id="sess-14-0"><div class="session-head">
     <label class="done-toggle">
       <input type="checkbox" class="done-check" data-sid="sess-14-0">
@@ -2107,7 +2185,7 @@ Roll number 9 not found</pre></div></details></div><div class="callout assign"><
         <button class="pill submit-btn" id="submit-btn-sess-14-2" data-sid="sess-14-2" disabled>Submit</button>
         <span class="submit-status" id="submit-status-sess-14-2"></span>
       </div>
-    </div></div></div></div></details>
+    </div></div></div></div></div>
 </main>
 
 <button class="continue-fab" id="continue-fab">▶ Continue</button>
@@ -2115,6 +2193,7 @@ Roll number 9 not found</pre></div></details></div><div class="callout assign"><
 <footer>
   Built as a companion to the official PPS-1 (24CSEN1031) lab notes. Use this to discuss and vibe-check concepts — refer to the full detailed document for exam-ready depth.
 </footer>
+</div>
 
 <script>
 const TOTAL_SESSIONS = 45;
@@ -2138,6 +2217,20 @@ const submittedSids = new Set();
 const quizAttemptedSids = new Set();
 const TIPS = ["Sessions with a completed quiz stick better in your memory than ones you just read — try the Quick Quiz before you move on.","Streaks reset if you miss a full day — even marking one session done keeps it alive.","Submitting your case study early means you can revisit and improve it before it's due.","Re-reading 'The Vibe' analogy out loud to a friend is a fast way to check you actually understood it.","Points here are for motivation, not grades — the real record is what you submit and complete.","Stuck on an assignment problem? Re-read the Code Challenge solution above it — most assignment problems reuse the same idea.","Try explaining a session's core idea in one sentence before opening 'Tap to reveal the solution'.","The fastest way to climb the rank board: finish one full experiment (3 sessions) in a single sitting.","Come back daily, even for 10 minutes — consistency beats marathon cramming for building real understanding.","Check the admin-reviewed feedback on your submissions (ask your instructor) to improve your next one."];
 let tipTimer = null;
+
+const SESSION_META = [{"sid":"sess-0-0","exp":1,"expTitle":"Basic Components of a Computer, Von Neumann Architecture, Number Systems, and Data Representation","day":"Monday","topic":"Basic components of a computer","globalIndex":0},{"sid":"sess-0-1","exp":1,"expTitle":"Basic Components of a Computer, Von Neumann Architecture, Number Systems, and Data Representation","day":"Tuesday","topic":"Von Neumann architecture and stored program model","globalIndex":1},{"sid":"sess-0-2","exp":1,"expTitle":"Basic Components of a Computer, Von Neumann Architecture, Number Systems, and Data Representation","day":"Friday","topic":"Binary and hexadecimal systems; conversions; data representation","globalIndex":2},{"sid":"sess-1-0","exp":2,"expTitle":"Flowcharts, Pseudocode, and Problem-Solving","day":"Monday","topic":"Flowcharts and pseudocode","globalIndex":3},{"sid":"sess-1-1","exp":2,"expTitle":"Flowcharts, Pseudocode, and Problem-Solving","day":"Tuesday","topic":"Problem-solving strategies","globalIndex":4},{"sid":"sess-1-2","exp":2,"expTitle":"Flowcharts, Pseudocode, and Problem-Solving","day":"Friday","topic":"C compilation process; syntax and semantic errors","globalIndex":5},{"sid":"sess-2-0","exp":3,"expTitle":"Variables, Data Types, Operators, and Expressions","day":"Monday","topic":"Variable names, data types and sizes, constants, declarations","globalIndex":6},{"sid":"sess-2-1","exp":3,"expTitle":"Variables, Data Types, Operators, and Expressions","day":"Tuesday","topic":"Arithmetic, relational, logical, and bitwise operators","globalIndex":7},{"sid":"sess-2-2","exp":3,"expTitle":"Variables, Data Types, Operators, and Expressions","day":"Friday","topic":"Type conversions, increment/decrement, assignment, conditional expressions, precedence","globalIndex":8},{"sid":"sess-3-0","exp":4,"expTitle":"Selection Statements, Switch, and Top-Down Design","day":"Monday","topic":"Statements and blocks; if-else and else-if","globalIndex":9},{"sid":"sess-3-1","exp":4,"expTitle":"Selection Statements, Switch, and Top-Down Design","day":"Tuesday","topic":"Switch; top-down design and breaking problems into sub-problems","globalIndex":10},{"sid":"sess-3-2","exp":4,"expTitle":"Selection Statements, Switch, and Top-Down Design","day":"Friday","topic":"Loops: while, for, do-while; break, continue; goto and labels","globalIndex":11},{"sid":"sess-4-0","exp":5,"expTitle":"Implementation of Algorithms and Functions","day":"Monday","topic":"Implementation of algorithms and modularity","globalIndex":12},{"sid":"sess-4-1","exp":5,"expTitle":"Implementation of Algorithms and Functions","day":"Tuesday","topic":"Choice of variable names; documentation; debugging","globalIndex":13},{"sid":"sess-4-2","exp":5,"expTitle":"Implementation of Algorithms and Functions","day":"Friday","topic":"Program testing; basics of functions; non-integer returns; external variables","globalIndex":14},{"sid":"sess-5-0","exp":6,"expTitle":"Scope Rules, Header Files, and Storage Classes","day":"Monday","topic":"Scope rules and block structure","globalIndex":15},{"sid":"sess-5-1","exp":6,"expTitle":"Scope Rules, Header Files, and Storage Classes","day":"Tuesday","topic":"Header files and initialization","globalIndex":16},{"sid":"sess-5-2","exp":6,"expTitle":"Scope Rules, Header Files, and Storage Classes","day":"Friday","topic":"Static variables and register variables","globalIndex":17},{"sid":"sess-6-0","exp":7,"expTitle":"Input/Output and Library Functions","day":"Monday","topic":"Input/output with <stdio.h>; formatted output","globalIndex":18},{"sid":"sess-6-1","exp":7,"expTitle":"Input/Output and Library Functions","day":"Tuesday","topic":"Formatted input; character I/O; direct I/O","globalIndex":19},{"sid":"sess-6-2","exp":7,"expTitle":"Input/Output and Library Functions","day":"Friday","topic":"<ctype.h>, <string.h>, <math.h>, <stdlib.h>","globalIndex":20},{"sid":"sess-7-0","exp":8,"expTitle":"Recursion and the C Preprocessor","day":"Monday","topic":"Recursion","globalIndex":21},{"sid":"sess-7-1","exp":8,"expTitle":"Recursion and the C Preprocessor","day":"Tuesday","topic":"C preprocessor; file inclusion; macro substitution","globalIndex":22},{"sid":"sess-7-2","exp":8,"expTitle":"Recursion and the C Preprocessor","day":"Friday","topic":"Conditional inclusion","globalIndex":23},{"sid":"sess-8-0","exp":9,"expTitle":"Pointers and Arrays","day":"Monday","topic":"Pointers and addresses","globalIndex":24},{"sid":"sess-8-1","exp":9,"expTitle":"Pointers and Arrays","day":"Tuesday","topic":"Pointers and function arguments; pointers and arrays","globalIndex":25},{"sid":"sess-8-2","exp":9,"expTitle":"Pointers and Arrays","day":"Friday","topic":"Address arithmetic; character pointers and functions","globalIndex":26},{"sid":"sess-9-0","exp":10,"expTitle":"Advanced Arrays and Function Pointers","day":"Monday","topic":"Pointer arrays (pointers to pointers)","globalIndex":27},{"sid":"sess-9-1","exp":10,"expTitle":"Advanced Arrays and Function Pointers","day":"Tuesday","topic":"Multi-dimensional arrays; initialization of pointer arrays","globalIndex":28},{"sid":"sess-9-2","exp":10,"expTitle":"Advanced Arrays and Function Pointers","day":"Friday","topic":"Pointers vs. multi-dimensional arrays; command-line arguments; pointers to functions","globalIndex":29},{"sid":"sess-10-0","exp":11,"expTitle":"Structures","day":"Monday","topic":"Basics of structures","globalIndex":30},{"sid":"sess-10-1","exp":11,"expTitle":"Structures","day":"Tuesday","topic":"Structures and functions; arrays of structures","globalIndex":31},{"sid":"sess-10-2","exp":11,"expTitle":"Structures","day":"Friday","topic":"Pointers to structures","globalIndex":32},{"sid":"sess-11-0","exp":12,"expTitle":"Table Lookup, typedef, Unions, and Bit-Fields","day":"Monday","topic":"Table lookup","globalIndex":33},{"sid":"sess-11-1","exp":12,"expTitle":"Table Lookup, typedef, Unions, and Bit-Fields","day":"Tuesday","topic":"typedef and unions","globalIndex":34},{"sid":"sess-11-2","exp":12,"expTitle":"Table Lookup, typedef, Unions, and Bit-Fields","day":"Friday","topic":"Bit-fields","globalIndex":35},{"sid":"sess-12-0","exp":13,"expTitle":"Basics of AI-Assisted Coding","day":"Monday","topic":"Basics of AI-assisted coding using GitHub Copilot / CodiumAI","globalIndex":36},{"sid":"sess-12-1","exp":13,"expTitle":"Basics of AI-Assisted Coding","day":"Tuesday","topic":"Prompting and workflow practice","globalIndex":37},{"sid":"sess-12-2","exp":13,"expTitle":"Basics of AI-Assisted Coding","day":"Friday","topic":"Mini review and application","globalIndex":38},{"sid":"sess-13-0","exp":14,"expTitle":"Code Comprehension Using AI-Generated Code","day":"Monday","topic":"Reading AI-generated code","globalIndex":39},{"sid":"sess-13-1","exp":14,"expTitle":"Code Comprehension Using AI-Generated Code","day":"Tuesday","topic":"Checking correctness and edge cases","globalIndex":40},{"sid":"sess-13-2","exp":14,"expTitle":"Code Comprehension Using AI-Generated Code","day":"Friday","topic":"Improving AI-generated code","globalIndex":41},{"sid":"sess-14-0","exp":15,"expTitle":"Mini Project","day":"Monday","topic":"Mini project planning and topic finalization","globalIndex":42},{"sid":"sess-14-1","exp":15,"expTitle":"Mini Project","day":"Tuesday","topic":"Mini project implementation","globalIndex":43},{"sid":"sess-14-2","exp":15,"expTitle":"Mini Project","day":"Friday","topic":"Mini project testing, debugging, and presentation","globalIndex":44}];
+const MOTIVATION = [
+  "One experiment down. Your future self, debugging at 2am before a viva, thanks you.",
+  "Momentum beats motivation — you just proved you have both.",
+  "Every session you finish is one less thing to cram later. Keep stacking them.",
+  "Consistency is the real skill here, not just C syntax. You're building both.",
+  "You're not just finishing sessions, you're building the habit that gets you through finals.",
+  "Small steady progress beats last-minute panic every single time — and you're doing it right.",
+  "That's another experiment in the bank. The lab-exam version of you is getting stronger."
+];
+let doneMap = {}; // sid -> { done, quizAttempted, submitted }
+let appMode = 'browse'; // 'gate' | 'player' | 'checkpoint' | 'browse'
+let activeSid = null;
 
 function todayStr(){
   const d = new Date();
@@ -2253,10 +2346,17 @@ function wireCheckboxes(){
       document.getElementById(sid).classList.toggle('completed', cb.checked);
       updateProgress();
       if (currentUser && currentStatus === 'approved') {
+        if (!doneMap[sid]) doneMap[sid] = {};
+        doneMap[sid].done = cb.checked;
         db.collection('users').doc(currentUser.uid).collection('progress').doc(sid)
           .set({ done: cb.checked, updatedAt: firebase.firestore.FieldValue.serverTimestamp() }, { merge: true })
           .catch(err => console.error('progress sync failed', err));
         touchStreakAndPoints();
+        if (appMode === 'player' && cb.checked) {
+          handleSessionCompletedInPlayer(sid);
+        } else {
+          renderSideNav();
+        }
       } else {
         localStorage.setItem('ppsgz_' + sid, cb.checked ? '1' : '0');
       }
@@ -2291,12 +2391,195 @@ function wireSubmissions(){
   });
 }
 
+function isUnlocked(gi){
+  if (gi <= 0) return true;
+  const prev = SESSION_META[gi - 1];
+  return !!(doneMap[prev.sid] && doneMap[prev.sid].done);
+}
+
+function firstIncompleteIndex(){
+  for (const m of SESSION_META) {
+    if (!(doneMap[m.sid] && doneMap[m.sid].done)) return m.globalIndex;
+  }
+  return -1;
+}
+
+function setAppMode(mode){
+  appMode = mode;
+  document.getElementById('gate-screen').style.display = mode === 'gate' ? 'flex' : 'none';
+  document.getElementById('checkpoint-screen').style.display = mode === 'checkpoint' ? 'flex' : 'none';
+  document.getElementById('content-col').style.display = (mode === 'gate' || mode === 'checkpoint') ? 'none' : '';
+  document.getElementById('side-nav').style.display = (mode === 'player') ? '' : 'none';
+  document.body.classList.toggle('has-sidenav', mode === 'player');
+  document.getElementById('quick-nav').style.display = (mode === 'browse') ? '' : 'none';
+  document.getElementById('continue-fab').style.display = (mode === 'browse') ? '' : 'none';
+  const topControls = document.getElementById('top-controls');
+  if (topControls) topControls.style.display = (mode === 'checkpoint' || mode === 'gate') ? 'none' : '';
+}
+
+function showSessionInPlayer(sid, tabKey){
+  tabKey = tabKey || 'learn';
+  const meta = SESSION_META.find(m => m.sid === sid);
+  if (!meta) return;
+  document.querySelectorAll('.exp-block').forEach(b => {
+    b.style.display = (b.dataset.exp === String(meta.exp)) ? '' : 'none';
+  });
+  document.querySelectorAll('.exp-header').forEach(h => { h.style.display = 'none'; });
+  document.querySelectorAll('.session-card').forEach(c => {
+    c.style.display = (c.id === sid) ? '' : 'none';
+  });
+  const card = document.getElementById(sid);
+  if (card) {
+    const tabBtn = card.querySelector('.tab-btn[data-tab="' + tabKey + '"]') || card.querySelector('.tab-btn');
+    if (tabBtn) tabBtn.click();
+    card.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+  activeSid = sid;
+  renderSideNav();
+}
+
+function enterPlayer(sid){
+  setAppMode('player');
+  showSessionInPlayer(sid, 'learn');
+}
+
+function exitToBrowse(){
+  setAppMode('browse');
+  document.querySelectorAll('.exp-block').forEach(b => { b.style.display = ''; });
+  document.querySelectorAll('.exp-header').forEach(h => { h.style.display = ''; });
+  document.querySelectorAll('.session-card').forEach(c => { c.style.display = ''; });
+}
+
+function showGate(){
+  setAppMode('gate');
+  const fi = firstIncompleteIndex();
+  const restartBtn = document.getElementById('gate-restart-btn');
+  const anyProgress = SESSION_META.some(m => doneMap[m.sid] && doneMap[m.sid].done);
+  const primaryBtn = document.getElementById('gate-primary-btn');
+  if (fi === -1) {
+    document.getElementById('gate-title').textContent = "You've finished everything! 🎉";
+    document.getElementById('gate-sub').textContent = "All 45 sessions done — nice work. Revisit any session or browse freely.";
+    primaryBtn.textContent = 'Browse all sessions';
+    primaryBtn.onclick = exitToBrowse;
+    restartBtn.style.display = '';
+    restartBtn.onclick = () => enterPlayer(SESSION_META[0].sid);
+  } else if (!anyProgress) {
+    document.getElementById('gate-title').textContent = 'Welcome! 👋';
+    document.getElementById('gate-sub').textContent = 'Ready to start? Session 1 is unlocked now — the rest unlock as you complete each one.';
+    primaryBtn.textContent = '▶ Start Session 1';
+    primaryBtn.onclick = () => enterPlayer(SESSION_META[0].sid);
+    restartBtn.style.display = 'none';
+  } else {
+    const m = SESSION_META[fi];
+    document.getElementById('gate-title').textContent = 'Welcome back! 👋';
+    document.getElementById('gate-sub').textContent = 'Continue from Exp ' + m.exp + ' — ' + m.topic + '?';
+    primaryBtn.textContent = '▶ Continue Session';
+    primaryBtn.onclick = () => enterPlayer(m.sid);
+    restartBtn.style.display = '';
+    restartBtn.onclick = () => enterPlayer(SESSION_META[0].sid);
+  }
+}
+
+async function showCheckpointFor(expNum){
+  setAppMode('checkpoint');
+  document.getElementById('checkpoint-motivation').textContent = MOTIVATION[Math.floor(Math.random() * MOTIVATION.length)];
+  const isLast = expNum >= 15;
+  document.getElementById('checkpoint-title').textContent = isLast ? '🏆 Course complete!' : '🎉 Experiment ' + expNum + ' complete!';
+  const btn = document.getElementById('checkpoint-continue-btn');
+  if (isLast) {
+    btn.textContent = 'Browse everything →';
+    btn.onclick = exitToBrowse;
+  } else {
+    const next = SESSION_META.find(m => m.exp === expNum + 1);
+    btn.textContent = 'Continue to Experiment ' + (expNum + 1) + ' →';
+    btn.onclick = () => enterPlayer(next.sid);
+  }
+  const board = document.getElementById('checkpoint-board');
+  board.innerHTML = '<p class="muted">Loading table toppers...</p>';
+  try {
+    const snap = await db.collection('leaderboard').get();
+    const rows = [];
+    snap.forEach(doc => rows.push({ name: doc.data().name || 'Someone', points: doc.data().points || 0 }));
+    rows.sort((a, b) => b.points - a.points);
+    const top = rows.slice(0, 5);
+    if (!top.length) {
+      board.innerHTML = '<p class="muted">No leaderboard data yet — be the first!</p>';
+    } else {
+      board.innerHTML = '<div class="board-title">🏆 Table toppers so far</div>' + top.map((r, i) =>
+        '<div class="board-row"><span class="board-rank">#' + (i + 1) + '</span><span class="board-name">' + r.name + '</span><span class="board-pts">' + r.points + ' pts</span></div>'
+      ).join('');
+    }
+  } catch (err) {
+    board.innerHTML = '<p class="muted">Couldn\'t load the leaderboard right now.</p>';
+  }
+}
+
+function handleSessionCompletedInPlayer(sid){
+  const meta = SESSION_META.find(m => m.sid === sid);
+  if (!meta) return;
+  const expSessions = SESSION_META.filter(m => m.exp === meta.exp);
+  const allDoneInExp = expSessions.every(m => doneMap[m.sid] && doneMap[m.sid].done);
+  if (allDoneInExp) {
+    setTimeout(() => showCheckpointFor(meta.exp), 400);
+    return;
+  }
+  const next = SESSION_META[meta.globalIndex + 1];
+  if (next) {
+    setTimeout(() => showSessionInPlayer(next.sid, 'learn'), 400);
+  } else {
+    renderSideNav();
+  }
+}
+
+function renderSideNav(){
+  const list = document.getElementById('side-nav-list');
+  if (!list) return;
+  let html = '';
+  let curExp = null;
+  SESSION_META.forEach(m => {
+    if (m.exp !== curExp) {
+      if (curExp !== null) html += '</div></div>';
+      curExp = m.exp;
+      html += '<div class="sn-exp"><div class="sn-exp-title">Exp ' + m.exp + ' · ' + esc(m.expTitle) + '</div><div class="sn-sessions">';
+    }
+    const gi = m.globalIndex;
+    const unlocked = isUnlocked(gi);
+    const done = !!(doneMap[m.sid] && doneMap[m.sid].done);
+    const isActive = m.sid === activeSid;
+    const icon = done ? '✅' : unlocked ? '▶️' : '🔒';
+    html += '<div class="sn-session' + (done ? ' done' : '') + (isActive ? ' active' : '') + (!unlocked ? ' locked' : '') + '" data-sid="' + m.sid + '">'
+      + '<div class="sn-session-head" data-sid="' + m.sid + '"><span class="sn-icon">' + icon + '</span><span class="sn-label">' + esc(m.day) + ' · ' + esc(m.topic) + '</span></div>';
+    if (isActive) {
+      const qMark = (doneMap[m.sid] && doneMap[m.sid].quizAttempted) ? ' ✓' : '';
+      const sMark = (doneMap[m.sid] && doneMap[m.sid].submitted) ? ' ✓' : '';
+      html += '<div class="sn-subitems">'
+        + '<button data-tab="learn" data-sid="' + m.sid + '">📖 Learn</button>'
+        + '<button data-tab="practice" data-sid="' + m.sid + '">🧩 Practice</button>'
+        + '<button data-tab="quiz" data-sid="' + m.sid + '">🎮 Quiz' + qMark + '</button>'
+        + '<button data-tab="submit" data-sid="' + m.sid + '">📤 Submit' + sMark + '</button>'
+        + '</div>';
+    }
+    html += '</div>';
+  });
+  html += '</div></div>';
+  list.innerHTML = html;
+}
+
+function esc(s){
+  return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+
 async function loadUserData(uid){
   const progressSnap = await db.collection('users').doc(uid).collection('progress').get();
   quizAttemptedSids.clear();
+  doneMap = {};
+  SESSION_META.forEach(m => { doneMap[m.sid] = { done: false, quizAttempted: false, submitted: false }; });
   progressSnap.forEach(doc => {
     const sid = doc.id;
     const d = doc.data();
+    if (!doneMap[sid]) doneMap[sid] = {};
+    doneMap[sid].done = !!d.done;
+    doneMap[sid].quizAttempted = !!d.quizAttempted;
     const cb = document.querySelector('.done-check[data-sid="' + sid + '"]');
     if (cb) {
       cb.checked = !!d.done;
@@ -2319,6 +2602,8 @@ async function loadUserData(uid){
   submittedSids.clear();
   subSnap.forEach(doc => {
     const sid = doc.id;
+    if (!doneMap[sid]) doneMap[sid] = {};
+    doneMap[sid].submitted = true;
     const ta = document.getElementById('submit-text-' + sid);
     if (ta) ta.value = doc.data().text || '';
     submittedSids.add(sid);
@@ -2398,13 +2683,17 @@ auth.onAuthStateChanged(async (user) => {
     renderAuthUI();
     if (currentStatus === 'approved') {
       await loadUserData(user.uid);
+      renderSideNav();
+      showGate();
     } else {
       loadLocalProgress();
+      exitToBrowse();
     }
   } else {
     currentStatus = null;
     renderAuthUI();
     loadLocalProgress();
+    exitToBrowse();
   }
 });
 
@@ -2457,11 +2746,28 @@ document.getElementById('theme-toggle').addEventListener('click', () => {
   localStorage.setItem('ppsgz_theme', next);
 });
 
-document.getElementById('expand-all').addEventListener('click', () => {
-  document.querySelectorAll('details.experiment').forEach(d => d.open = true);
+document.getElementById('side-nav').addEventListener('click', (e) => {
+  const subBtn = e.target.closest('.sn-subitems button');
+  if (subBtn) {
+    showSessionInPlayer(subBtn.dataset.sid, subBtn.dataset.tab);
+    return;
+  }
+  const head = e.target.closest('.sn-session-head');
+  if (head) {
+    const sid = head.dataset.sid;
+    const meta = SESSION_META.find(m => m.sid === sid);
+    if (!meta) return;
+    if (!isUnlocked(meta.globalIndex)) {
+      alert('🔒 Finish the previous session first to unlock this one.');
+      return;
+    }
+    showSessionInPlayer(sid, 'learn');
+  }
 });
-document.getElementById('collapse-all').addEventListener('click', () => {
-  document.querySelectorAll('details.experiment').forEach(d => d.open = false);
+document.getElementById('browse-all-btn').addEventListener('click', exitToBrowse);
+document.getElementById('gate-browse-link').addEventListener('click', (e) => {
+  e.preventDefault();
+  exitToBrowse();
 });
 
 // Tab switching inside each session card
@@ -2480,7 +2786,6 @@ document.getElementById('quick-nav').addEventListener('click', (e) => {
   if (!btn) return;
   const n = btn.dataset.jump;
   const target = document.getElementById('exp-' + n);
-  document.querySelectorAll('details.experiment').forEach(d => { d.open = (d === target); });
   if (target) target.scrollIntoView({ behavior: 'smooth', block: 'start' });
 });
 
@@ -2499,8 +2804,6 @@ document.getElementById('continue-fab').addEventListener('click', () => {
   const cards = document.querySelectorAll('.session-card');
   for (const card of cards) {
     if (!card.classList.contains('completed')) {
-      const exp = card.closest('details.experiment');
-      document.querySelectorAll('details.experiment').forEach(d => { d.open = (d === exp); });
       card.scrollIntoView({ behavior: 'smooth', block: 'start' });
       return;
     }
