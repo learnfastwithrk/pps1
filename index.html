@@ -7,6 +7,7 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/canvas-confetti/1.9.2/confetti.browser.min.js"></script>
 <style>
 
   :root{
@@ -256,6 +257,38 @@
   .board-name{ flex:1; }
   .board-pts{ color:var(--muted); font-weight:600; }
 
+  .avatar-wrap{ position:relative; width:28px; height:28px; flex-shrink:0; }
+  .avatar-emoji{
+    display:flex; align-items:center; justify-content:center; width:28px; height:28px; border-radius:50%;
+    background: var(--bg2); border:1px solid var(--border); font-size:15px;
+  }
+  .edit-profile-btn{
+    font-family:inherit; cursor:pointer; border:none; background:transparent; font-size:13px; padding:2px 4px; opacity:.7;
+  }
+  .edit-profile-btn:hover{ opacity:1; }
+  .topbar-stats{ display:flex; gap:10px; font-size:12.5px; font-weight:600; }
+  .topbar-stats span{ display:inline-flex; align-items:center; gap:3px; }
+  .btn-tiny{ font-size:11px; padding:4px 10px; }
+
+  .profile-modal-bg{
+    position:fixed; inset:0; background:rgba(0,0,0,0.6); z-index:70; display:none; align-items:center; justify-content:center; padding:20px;
+  }
+  .profile-modal{
+    background: var(--card); border:1px solid var(--border); border-radius:18px; padding:26px 24px; max-width:380px; width:100%;
+  }
+  .profile-modal h3{ margin:0 0 16px; }
+  .profile-label{ display:block; font-size:12.5px; font-weight:700; color:var(--muted); margin:14px 0 6px; }
+  .profile-modal input[type="text"]{
+    width:100%; padding:9px 12px; border-radius:10px; border:1px solid var(--border); background:var(--bg2); color:var(--text);
+    font-family:inherit; font-size:14px;
+  }
+  .avatar-grid{ display:grid; grid-template-columns:repeat(5, 1fr); gap:8px; }
+  .avatar-choice{
+    font-size:20px; padding:8px 0; border-radius:10px; border:1px solid var(--border); background:var(--bg2); cursor:pointer;
+  }
+  .avatar-choice.selected{ border-color:var(--purple); background: rgba(127,90,240,0.2); }
+  .profile-modal-actions{ display:flex; gap:10px; margin-top:20px; justify-content:flex-end; }
+
   footer{ text-align:center; padding: 30px 20px 50px; color:var(--muted); font-size:13px;}
 
   @media (max-width: 600px){
@@ -268,11 +301,35 @@
 <div class="auth-bar" id="auth-bar">
   <div id="auth-signed-out"><button class="pill" id="signin-btn">🔑 Sign in with Google to track progress &amp; submit assignments</button></div>
   <div id="auth-signed-in" style="display:none;">
-    <img id="auth-avatar" src="" alt="">
+    <span class="avatar-wrap">
+      <img id="auth-avatar" src="" alt="">
+      <span id="auth-avatar-emoji" class="avatar-emoji" style="display:none;"></span>
+    </span>
     <span id="auth-name"></span>
+    <button class="edit-profile-btn" id="edit-profile-btn" title="Edit profile">✏️</button>
     <span class="status-badge" id="auth-status"></span>
-    <a id="admin-link" href="admin.html" style="display:none;">🛠 Admin Dashboard →</a>
+    <span class="topbar-stats" id="topbar-stats" style="display:none;">
+      <span title="Day streak">🔥<b id="tb-streak">0</b></span>
+      <span title="Points">⭐<b id="tb-points">0</b></span>
+      <span title="Class rank">📊<b id="tb-rank">—</b></span>
+    </span>
+    <button class="pill secondary btn-tiny" id="theme-toggle">🌙/☀️</button>
+    <a id="admin-link" href="admin.html" style="display:none;">🛠 Admin →</a>
     <button class="pill secondary" id="signout-btn">Sign out</button>
+  </div>
+</div>
+
+<div class="profile-modal-bg" id="profile-modal-bg" style="display:none;">
+  <div class="profile-modal">
+    <h3>Edit profile</h3>
+    <label class="profile-label">Display name</label>
+    <input type="text" id="profile-name-input" maxlength="40" placeholder="Your name">
+    <label class="profile-label">Pick an avatar</label>
+    <div class="avatar-grid" id="avatar-grid"></div>
+    <div class="profile-modal-actions">
+      <button class="pill" id="profile-save-btn">Save</button>
+      <button class="pill secondary" id="profile-cancel-btn">Cancel</button>
+    </div>
   </div>
 </div>
 <div class="side-nav" id="side-nav" style="display:none;">
@@ -305,8 +362,8 @@
 </div>
 
 <div class="content-col" id="content-col">
-<div class="hero">
-  <h1>PPS-1 Survival Guide 🎮</h1>
+<div class="hero" id="hero">
+  <h1 id="hero-title">PPS-1 Survival Guide 🎮</h1>
   <div id="hero-marketing">
     <p>Programming for Problem Solving – 1, but make it make sense. Same 15 experiments, same 45 sessions — rebuilt with analogies that don't put you to sleep, discussion prompts for your study group, and quizzes you can actually click through.</p>
     <div class="badges">
@@ -317,17 +374,8 @@
     </div>
   </div>
   <div class="dashboard" id="dashboard" style="display:none;">
-    <div class="dash-stats">
-      <div class="dash-stat"><div class="dash-stat-value" id="dash-streak">0</div><div class="dash-stat-label">🔥 Day streak</div></div>
-      <div class="dash-stat"><div class="dash-stat-value" id="dash-longest">0</div><div class="dash-stat-label">🏆 Best streak</div></div>
-      <div class="dash-stat"><div class="dash-stat-value" id="dash-points">0</div><div class="dash-stat-label">⭐ Points</div></div>
-      <div class="dash-stat"><div class="dash-stat-value" id="dash-rank">—</div><div class="dash-stat-label">📊 Class rank</div></div>
-    </div>
     <div class="tip-banner" id="tip-banner">💡 <span id="tip-text"></span></div>
     <div class="challenger-banner" id="challenger-banner"></div>
-  </div>
-  <div class="top-controls" id="top-controls">
-    <button class="pill" id="theme-toggle">🌙 Dark / ☀️ Light</button>
   </div>
   <div class="progress-wrap">
     <div class="progress-bar-outer"><div class="progress-bar-inner" id="progress-bar"></div></div>
@@ -2220,6 +2268,26 @@ const quizAttemptedSids = new Set();
 const TIPS = ["Sessions with a completed quiz stick better in your memory than ones you just read — try the Quick Quiz before you move on.","Streaks reset if you miss a full day — even marking one session done keeps it alive.","Submitting your case study early means you can revisit and improve it before it's due.","Re-reading 'The Vibe' analogy out loud to a friend is a fast way to check you actually understood it.","Points here are for motivation, not grades — the real record is what you submit and complete.","Stuck on an assignment problem? Re-read the Code Challenge solution above it — most assignment problems reuse the same idea.","Try explaining a session's core idea in one sentence before opening 'Tap to reveal the solution'.","The fastest way to climb the rank board: finish one full experiment (3 sessions) in a single sitting.","Come back daily, even for 10 minutes — consistency beats marathon cramming for building real understanding.","Check the admin-reviewed feedback on your submissions (ask your instructor) to improve your next one."];
 let tipTimer = null;
 
+const AVATAR_CHOICES = ['🦄','🐱','🐶','🦊','🐼','🐧','🐸','🦁','🐯','🐵','🤖','👾','🧑‍💻','🎮','⚡','🔥','🌟','🚀','🎯','🏆'];
+let selectedAvatar = null;
+
+function displayName(){
+  if (userDoc && userDoc.nameOverride) return userDoc.nameOverride;
+  if (currentUser) return currentUser.displayName || currentUser.email;
+  return 'You';
+}
+function displayAvatarEmoji(){
+  return (userDoc && userDoc.avatarEmoji) || null;
+}
+
+function fireConfetti(big){
+  if (!window.confetti) return;
+  confetti({ particleCount: big ? 160 : 70, spread: big ? 100 : 65, origin: { y: 0.6 }, colors: ['#7f5af0', '#ff8906', '#e53170', '#2cb67d'] });
+  if (big) {
+    setTimeout(() => confetti({ particleCount: 100, spread: 120, origin: { y: 0.4 }, colors: ['#7f5af0', '#ff8906', '#e53170', '#2cb67d'] }), 250);
+  }
+}
+
 const SESSION_META = [{"sid":"sess-0-0","exp":1,"expTitle":"Basic Components of a Computer, Von Neumann Architecture, Number Systems, and Data Representation","day":"Monday","topic":"Basic components of a computer","globalIndex":0},{"sid":"sess-0-1","exp":1,"expTitle":"Basic Components of a Computer, Von Neumann Architecture, Number Systems, and Data Representation","day":"Tuesday","topic":"Von Neumann architecture and stored program model","globalIndex":1},{"sid":"sess-0-2","exp":1,"expTitle":"Basic Components of a Computer, Von Neumann Architecture, Number Systems, and Data Representation","day":"Friday","topic":"Binary and hexadecimal systems; conversions; data representation","globalIndex":2},{"sid":"sess-1-0","exp":2,"expTitle":"Flowcharts, Pseudocode, and Problem-Solving","day":"Monday","topic":"Flowcharts and pseudocode","globalIndex":3},{"sid":"sess-1-1","exp":2,"expTitle":"Flowcharts, Pseudocode, and Problem-Solving","day":"Tuesday","topic":"Problem-solving strategies","globalIndex":4},{"sid":"sess-1-2","exp":2,"expTitle":"Flowcharts, Pseudocode, and Problem-Solving","day":"Friday","topic":"C compilation process; syntax and semantic errors","globalIndex":5},{"sid":"sess-2-0","exp":3,"expTitle":"Variables, Data Types, Operators, and Expressions","day":"Monday","topic":"Variable names, data types and sizes, constants, declarations","globalIndex":6},{"sid":"sess-2-1","exp":3,"expTitle":"Variables, Data Types, Operators, and Expressions","day":"Tuesday","topic":"Arithmetic, relational, logical, and bitwise operators","globalIndex":7},{"sid":"sess-2-2","exp":3,"expTitle":"Variables, Data Types, Operators, and Expressions","day":"Friday","topic":"Type conversions, increment/decrement, assignment, conditional expressions, precedence","globalIndex":8},{"sid":"sess-3-0","exp":4,"expTitle":"Selection Statements, Switch, and Top-Down Design","day":"Monday","topic":"Statements and blocks; if-else and else-if","globalIndex":9},{"sid":"sess-3-1","exp":4,"expTitle":"Selection Statements, Switch, and Top-Down Design","day":"Tuesday","topic":"Switch; top-down design and breaking problems into sub-problems","globalIndex":10},{"sid":"sess-3-2","exp":4,"expTitle":"Selection Statements, Switch, and Top-Down Design","day":"Friday","topic":"Loops: while, for, do-while; break, continue; goto and labels","globalIndex":11},{"sid":"sess-4-0","exp":5,"expTitle":"Implementation of Algorithms and Functions","day":"Monday","topic":"Implementation of algorithms and modularity","globalIndex":12},{"sid":"sess-4-1","exp":5,"expTitle":"Implementation of Algorithms and Functions","day":"Tuesday","topic":"Choice of variable names; documentation; debugging","globalIndex":13},{"sid":"sess-4-2","exp":5,"expTitle":"Implementation of Algorithms and Functions","day":"Friday","topic":"Program testing; basics of functions; non-integer returns; external variables","globalIndex":14},{"sid":"sess-5-0","exp":6,"expTitle":"Scope Rules, Header Files, and Storage Classes","day":"Monday","topic":"Scope rules and block structure","globalIndex":15},{"sid":"sess-5-1","exp":6,"expTitle":"Scope Rules, Header Files, and Storage Classes","day":"Tuesday","topic":"Header files and initialization","globalIndex":16},{"sid":"sess-5-2","exp":6,"expTitle":"Scope Rules, Header Files, and Storage Classes","day":"Friday","topic":"Static variables and register variables","globalIndex":17},{"sid":"sess-6-0","exp":7,"expTitle":"Input/Output and Library Functions","day":"Monday","topic":"Input/output with <stdio.h>; formatted output","globalIndex":18},{"sid":"sess-6-1","exp":7,"expTitle":"Input/Output and Library Functions","day":"Tuesday","topic":"Formatted input; character I/O; direct I/O","globalIndex":19},{"sid":"sess-6-2","exp":7,"expTitle":"Input/Output and Library Functions","day":"Friday","topic":"<ctype.h>, <string.h>, <math.h>, <stdlib.h>","globalIndex":20},{"sid":"sess-7-0","exp":8,"expTitle":"Recursion and the C Preprocessor","day":"Monday","topic":"Recursion","globalIndex":21},{"sid":"sess-7-1","exp":8,"expTitle":"Recursion and the C Preprocessor","day":"Tuesday","topic":"C preprocessor; file inclusion; macro substitution","globalIndex":22},{"sid":"sess-7-2","exp":8,"expTitle":"Recursion and the C Preprocessor","day":"Friday","topic":"Conditional inclusion","globalIndex":23},{"sid":"sess-8-0","exp":9,"expTitle":"Pointers and Arrays","day":"Monday","topic":"Pointers and addresses","globalIndex":24},{"sid":"sess-8-1","exp":9,"expTitle":"Pointers and Arrays","day":"Tuesday","topic":"Pointers and function arguments; pointers and arrays","globalIndex":25},{"sid":"sess-8-2","exp":9,"expTitle":"Pointers and Arrays","day":"Friday","topic":"Address arithmetic; character pointers and functions","globalIndex":26},{"sid":"sess-9-0","exp":10,"expTitle":"Advanced Arrays and Function Pointers","day":"Monday","topic":"Pointer arrays (pointers to pointers)","globalIndex":27},{"sid":"sess-9-1","exp":10,"expTitle":"Advanced Arrays and Function Pointers","day":"Tuesday","topic":"Multi-dimensional arrays; initialization of pointer arrays","globalIndex":28},{"sid":"sess-9-2","exp":10,"expTitle":"Advanced Arrays and Function Pointers","day":"Friday","topic":"Pointers vs. multi-dimensional arrays; command-line arguments; pointers to functions","globalIndex":29},{"sid":"sess-10-0","exp":11,"expTitle":"Structures","day":"Monday","topic":"Basics of structures","globalIndex":30},{"sid":"sess-10-1","exp":11,"expTitle":"Structures","day":"Tuesday","topic":"Structures and functions; arrays of structures","globalIndex":31},{"sid":"sess-10-2","exp":11,"expTitle":"Structures","day":"Friday","topic":"Pointers to structures","globalIndex":32},{"sid":"sess-11-0","exp":12,"expTitle":"Table Lookup, typedef, Unions, and Bit-Fields","day":"Monday","topic":"Table lookup","globalIndex":33},{"sid":"sess-11-1","exp":12,"expTitle":"Table Lookup, typedef, Unions, and Bit-Fields","day":"Tuesday","topic":"typedef and unions","globalIndex":34},{"sid":"sess-11-2","exp":12,"expTitle":"Table Lookup, typedef, Unions, and Bit-Fields","day":"Friday","topic":"Bit-fields","globalIndex":35},{"sid":"sess-12-0","exp":13,"expTitle":"Basics of AI-Assisted Coding","day":"Monday","topic":"Basics of AI-assisted coding using GitHub Copilot / CodiumAI","globalIndex":36},{"sid":"sess-12-1","exp":13,"expTitle":"Basics of AI-Assisted Coding","day":"Tuesday","topic":"Prompting and workflow practice","globalIndex":37},{"sid":"sess-12-2","exp":13,"expTitle":"Basics of AI-Assisted Coding","day":"Friday","topic":"Mini review and application","globalIndex":38},{"sid":"sess-13-0","exp":14,"expTitle":"Code Comprehension Using AI-Generated Code","day":"Monday","topic":"Reading AI-generated code","globalIndex":39},{"sid":"sess-13-1","exp":14,"expTitle":"Code Comprehension Using AI-Generated Code","day":"Tuesday","topic":"Checking correctness and edge cases","globalIndex":40},{"sid":"sess-13-2","exp":14,"expTitle":"Code Comprehension Using AI-Generated Code","day":"Friday","topic":"Improving AI-generated code","globalIndex":41},{"sid":"sess-14-0","exp":15,"expTitle":"Mini Project","day":"Monday","topic":"Mini project planning and topic finalization","globalIndex":42},{"sid":"sess-14-1","exp":15,"expTitle":"Mini Project","day":"Tuesday","topic":"Mini project implementation","globalIndex":43},{"sid":"sess-14-2","exp":15,"expTitle":"Mini Project","day":"Friday","topic":"Mini project testing, debugging, and presentation","globalIndex":44}];
 const MOTIVATION = [
   "One experiment down. Your future self, debugging at 2am before a viva, thanks you.",
@@ -2269,7 +2337,7 @@ async function touchStreakAndPoints(){
   userDoc.points = points;
   try {
     await db.collection('users').doc(currentUser.uid).update({ currentStreak, longestStreak, lastActiveDate, points });
-    await db.collection('leaderboard').doc(currentUser.uid).set({ name: currentUser.displayName || currentUser.email, points }, { merge: true });
+    await db.collection('leaderboard').doc(currentUser.uid).set({ name: displayName(), points }, { merge: true });
   } catch (err) { console.error('streak/points sync failed', err); }
   renderDashboardStats();
   await renderRankAndChallenger();
@@ -2277,9 +2345,10 @@ async function touchStreakAndPoints(){
 
 function renderDashboardStats(){
   if (!userDoc) return;
-  document.getElementById('dash-streak').textContent = userDoc.currentStreak || 0;
-  document.getElementById('dash-longest').textContent = userDoc.longestStreak || 0;
-  document.getElementById('dash-points').textContent = userDoc.points || 0;
+  const streakEl = document.getElementById('tb-streak');
+  const pointsEl = document.getElementById('tb-points');
+  if (streakEl) streakEl.textContent = userDoc.currentStreak || 0;
+  if (pointsEl) pointsEl.textContent = userDoc.points || 0;
 }
 
 async function renderRankAndChallenger(){
@@ -2290,10 +2359,10 @@ async function renderRankAndChallenger(){
     snap.forEach(doc => rows.push({ uid: doc.id, name: doc.data().name || 'Someone', points: doc.data().points || 0 }));
     rows.sort((a, b) => b.points - a.points);
     const myIdx = rows.findIndex(r => r.uid === currentUser.uid);
-    const rankEl = document.getElementById('dash-rank');
+    const rankEl = document.getElementById('tb-rank');
     const bannerEl = document.getElementById('challenger-banner');
-    if (myIdx === -1) { rankEl.textContent = '—'; bannerEl.textContent = ''; return; }
-    rankEl.textContent = '#' + (myIdx + 1) + ' / ' + rows.length;
+    if (myIdx === -1) { if (rankEl) rankEl.textContent = '—'; bannerEl.textContent = ''; return; }
+    if (rankEl) rankEl.textContent = '#' + (myIdx + 1) + ' / ' + rows.length;
     if (myIdx === 0) {
       bannerEl.textContent = rows.length > 1 ? '👑 You\'re #1 in the class! Keep your streak alive to stay on top.' : '👑 You\'re on the board — invite a classmate to make it a real race!';
     } else {
@@ -2354,6 +2423,7 @@ function wireCheckboxes(){
           .set({ done: cb.checked, updatedAt: firebase.firestore.FieldValue.serverTimestamp() }, { merge: true })
           .catch(err => console.error('progress sync failed', err));
         touchStreakAndPoints();
+        if (cb.checked) fireConfetti(false);
         if (appMode === 'player' && cb.checked) {
           handleSessionCompletedInPlayer(sid);
         } else {
@@ -2484,6 +2554,7 @@ function showGate(){
 
 async function showCheckpointFor(expNum){
   setAppMode('checkpoint');
+  fireConfetti(true);
   document.getElementById('checkpoint-motivation').textContent = MOTIVATION[Math.floor(Math.random() * MOTIVATION.length)];
   const isLast = expNum >= 15;
   document.getElementById('checkpoint-title').textContent = isLast ? '🏆 Course complete!' : '🎉 Experiment ' + expNum + ' complete!';
@@ -2624,6 +2695,8 @@ async function ensureUserDoc(user){
     const data = {
       email: user.email,
       name: user.displayName,
+      nameOverride: null,
+      avatarEmoji: null,
       photoURL: user.photoURL,
       status: 'pending',
       currentStreak: 0,
@@ -2640,16 +2713,36 @@ async function ensureUserDoc(user){
   return userDoc.status || 'pending';
 }
 
+function renderProfileBadge(){
+  const emoji = displayAvatarEmoji();
+  const avatarImg = document.getElementById('auth-avatar');
+  const avatarEmojiEl = document.getElementById('auth-avatar-emoji');
+  if (emoji) {
+    avatarImg.style.display = 'none';
+    avatarEmojiEl.style.display = '';
+    avatarEmojiEl.textContent = emoji;
+  } else {
+    avatarImg.style.display = '';
+    avatarEmojiEl.style.display = 'none';
+    avatarImg.src = currentUser.photoURL || '';
+  }
+  document.getElementById('auth-name').textContent = displayName();
+}
+
 function renderAuthUI(){
   const signedOut = document.getElementById('auth-signed-out');
   const signedIn = document.getElementById('auth-signed-in');
   const marketing = document.getElementById('hero-marketing');
   const dashboard = document.getElementById('dashboard');
+  const heroTitle = document.getElementById('hero-title');
+  const topbarStats = document.getElementById('topbar-stats');
   if (!currentUser) {
     signedOut.style.display = '';
     signedIn.style.display = 'none';
     marketing.style.display = '';
     dashboard.style.display = 'none';
+    heroTitle.style.display = '';
+    topbarStats.style.display = 'none';
     if (tipTimer) clearInterval(tipTimer);
     setInteractiveEnabled(false);
     return;
@@ -2658,8 +2751,7 @@ function renderAuthUI(){
   signedIn.style.display = 'flex';
   signedIn.style.alignItems = 'center';
   signedIn.style.gap = '10px';
-  document.getElementById('auth-avatar').src = currentUser.photoURL || '';
-  document.getElementById('auth-name').textContent = currentUser.displayName || currentUser.email;
+  renderProfileBadge();
   const statusEl = document.getElementById('auth-status');
   statusEl.className = 'status-badge ' + currentStatus;
   statusEl.textContent = currentStatus === 'approved' ? '✓ Approved' : currentStatus === 'pending' ? '⏳ Pending approval' : '✕ Access denied';
@@ -2668,12 +2760,16 @@ function renderAuthUI(){
 
   if (currentStatus === 'approved') {
     marketing.style.display = 'none';
+    heroTitle.style.display = 'none';
     dashboard.style.display = '';
+    topbarStats.style.display = '';
     renderDashboardStats();
     startTipRotation();
   } else {
     marketing.style.display = '';
+    heroTitle.style.display = '';
     dashboard.style.display = 'none';
+    topbarStats.style.display = 'none';
     if (tipTimer) clearInterval(tipTimer);
   }
 }
@@ -2713,6 +2809,46 @@ document.getElementById('signin-btn').addEventListener('click', async () => {
 });
 document.getElementById('signout-btn').addEventListener('click', () => auth.signOut());
 auth.getRedirectResult().catch(err => console.error('redirect sign-in error', err));
+
+function renderAvatarGrid(){
+  const grid = document.getElementById('avatar-grid');
+  grid.innerHTML = AVATAR_CHOICES.map(a =>
+    '<button type="button" class="avatar-choice' + (a === selectedAvatar ? ' selected' : '') + '" data-emoji="' + a + '">' + a + '</button>'
+  ).join('');
+}
+function openProfileModal(){
+  if (!currentUser) return;
+  document.getElementById('profile-name-input').value = displayName();
+  selectedAvatar = displayAvatarEmoji();
+  renderAvatarGrid();
+  document.getElementById('profile-modal-bg').style.display = 'flex';
+}
+document.getElementById('edit-profile-btn').addEventListener('click', openProfileModal);
+document.getElementById('avatar-grid').addEventListener('click', (e) => {
+  const btn = e.target.closest('.avatar-choice');
+  if (!btn) return;
+  selectedAvatar = (btn.dataset.emoji === selectedAvatar) ? null : btn.dataset.emoji;
+  renderAvatarGrid();
+});
+document.getElementById('profile-cancel-btn').addEventListener('click', () => {
+  document.getElementById('profile-modal-bg').style.display = 'none';
+});
+document.getElementById('profile-save-btn').addEventListener('click', async () => {
+  if (!currentUser) return;
+  const name = document.getElementById('profile-name-input').value.trim().slice(0, 40) || displayName();
+  userDoc = userDoc || {};
+  userDoc.nameOverride = name;
+  userDoc.avatarEmoji = selectedAvatar || null;
+  try {
+    await db.collection('users').doc(currentUser.uid).update({ nameOverride: name, avatarEmoji: selectedAvatar || null });
+    if (currentStatus === 'approved') {
+      await db.collection('leaderboard').doc(currentUser.uid).set({ name, points: userDoc.points || 0 }, { merge: true });
+    }
+  } catch (err) { console.error('profile save failed', err); }
+  document.getElementById('profile-modal-bg').style.display = 'none';
+  renderProfileBadge();
+  renderSideNav();
+});
 
 function handleQuizClick(btn){
   const group = btn.parentElement;
