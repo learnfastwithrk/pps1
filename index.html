@@ -7,8 +7,14 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
-<script>var module;</script>
+<script>window.module = { exports: {} };</script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/canvas-confetti/1.9.4/confetti.min.js"></script>
+<script>
+  if (window.module && window.module.exports && typeof window.confetti !== 'function') {
+    window.confetti = window.module.exports.default || window.module.exports;
+  }
+  window.module = undefined;
+</script>
 <style>
 
   :root{
